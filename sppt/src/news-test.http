@@ -1,0 +1,41 @@
+// 1. 查询所有新闻（GET）
+GET http://localhost:8080/news
+Accept: application/json
+
+###
+
+// 2. 查询单条新闻（GET），把 1 换成你数据库里真实的 id
+GET http://localhost:8080/news/1
+Accept: application/json
+
+###
+
+// 3. 新增新闻（POST）
+// 3. 新增新闻（POST）
+POST http://localhost:8080/news
+Content-Type: application/json
+
+{
+  "title": "测试新闻（IDEA POST）",
+  "content": "这是用 IDEA HTTP Client 新增的内容",
+  "type": "公告",
+  "areaId": 0,
+  "publisherId": 1
+}
+
+###
+
+// 4. 修改新闻（PUT），id 要和数据库一致
+PUT http://localhost:8080/news
+Content-Type: application/json
+
+{
+  "id": 1,
+  "title": "修改后的标题（PUT）",
+  "content": "修改后的内容"
+}
+
+###
+
+// 5. 删除新闻（DELETE），把 1 换成要删的 id
+DELETE http://localhost:8080/news/1

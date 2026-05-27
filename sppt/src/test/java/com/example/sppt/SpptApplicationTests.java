@@ -1,13 +1,13 @@
-package com.example.sgnaims;
+package com.example.sppt;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
 
 @SpringBootTest
-class SgnAimsApplicationTests {
+class SpptApplicationTests {
 
-	@Test
-	void contextLoads() {
-	}
+    @Test
+    void contextLoads() {
+    }
 
 }
