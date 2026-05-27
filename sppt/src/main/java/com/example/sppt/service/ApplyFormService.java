@@ -8,4 +8,5 @@ import com.baomidou.mybatisplus.extension.service.IService;
 import com.example.sppt.entity.ApplyForm;
 
 public interface ApplyFormService extends IService<ApplyForm> {
+    boolean audit(Long id, String status, String remark);
 }

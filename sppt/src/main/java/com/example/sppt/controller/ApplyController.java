@@ -46,12 +46,11 @@ public class ApplyController {
         return applyFormService.list();
     }
 
-    // 审核通过/驳回
-    @PostMapping("/admin/audit")
-    public String audit(@RequestParam Long id, @RequestParam String status) {
-        ApplyForm form = applyFormService.getById(id);
-        form.setStatus(status);
-        applyFormService.updateById(form);
-        return "审核成功";
+    // 审批接口（改状态）
+    @PutMapping("/admin/audit/{id}/{status}")
+    public boolean audit(
+            @PathVariable Long id,
+            @PathVariable String status) {
+        return applyFormService.audit(id, status,"");
     }
 }
