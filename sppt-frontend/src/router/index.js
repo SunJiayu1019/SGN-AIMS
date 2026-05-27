@@ -2,7 +2,7 @@ import { createRouter, createWebHistory } from 'vue-router'
 
 
 import ApplyAudit from '../views/admin/ApplyAudit.vue';
-import ApplySubmit from "@/views/user/ApplySubmit.vue";
+import ApplySubmit from "../views/user/ApplySubmit.vue";
 
 const routes = [
   {
@@ -10,7 +10,7 @@ const routes = [
     component: ApplyAudit,
   },
   {
-    path:'./user/Submit',
+    path:'/user/Submit',
     component: ApplySubmit,
   }
 ]
