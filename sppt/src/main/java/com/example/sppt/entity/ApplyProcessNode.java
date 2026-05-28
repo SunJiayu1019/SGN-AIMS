@@ -14,8 +14,8 @@ import lombok.Data;
 @TableName("apply_process_node")
 public class ApplyProcessNode {
     @TableId(type = IdType.AUTO)
-    private Long id;            // 主键ID
-    private Long areaId;        // 区域ID 0总站
+    private Integer id;            // 主键ID
+    private Integer areaId;        // 区域ID 0总站
     private Integer nodeLevel;  // 审批节点级数 1~5级
     private String auditUserIds; // 审核人ID,多个
     private String auditType;   // 审核类型 ONE通过/ALL通过
