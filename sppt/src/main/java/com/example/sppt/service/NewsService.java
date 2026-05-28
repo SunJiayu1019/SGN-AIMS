@@ -21,4 +21,7 @@ public interface NewsService extends IService<News> {
 
     // 补上分页方法
     IPage<News> pageByType(String type, int pageNum, int pageSize);
+
+    // 根据城市ID获取政策和公告（给首页用）
+    Map<String, List<News>> homeListByAreaId(String city);
 }

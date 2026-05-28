@@ -58,4 +58,51 @@ public class NewsServiceImpl extends ServiceImpl<NewsMapper, News>
         return page(new Page<>(pageNum, pageSize),
                 new LambdaQueryWrapper<News>().eq(News::getType, type));
     }
+    @Override
+    public Map<String, List<News>> homeListByAreaId(String city) {
+
+        List<News> policyList;
+        List<News> noticeList;
+
+        // ======================
+        // 1. 全省：每个市只取 2 条
+        // ======================
+        if ("all".equals(city)) {
+
+            // 政策：每个市 2 条
+            policyList = list(new LambdaQueryWrapper<News>()
+                    .eq(News::getType, "policy")
+                    .last("LIMIT 6"));
+
+            // 公告：每个市 2 条
+            noticeList = list(new LambdaQueryWrapper<News>()
+                    .eq(News::getType, "notice")
+                    .last("LIMIT 6"));
+        }
+
+        // ======================
+        // 2. 具体市：显示全部
+        // ======================
+        else {
+            Integer areaId = switch (city) {
+                case "taiyuan" -> 1;
+                case "lvliang" -> 2;
+                case "jinzhong" -> 3;
+                default -> 1;
+            };
+
+            policyList = list(new LambdaQueryWrapper<News>()
+                    .eq(News::getType, "policy")
+                    .eq(News::getAreaId, areaId));
+
+            noticeList = list(new LambdaQueryWrapper<News>()
+                    .eq(News::getType, "notice")
+                    .eq(News::getAreaId, areaId));
+        }
+
+        Map<String, List<News>> map = new HashMap<>();
+        map.put("policyList", policyList);
+        map.put("noticeList", noticeList);
+        return map;
+    }
 }

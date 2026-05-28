@@ -10,7 +10,6 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 import java.util.Map;
 
-@CrossOrigin(origins = "*")
 @RestController
 @RequestMapping("/news")
 public class NewsController {
@@ -84,4 +83,57 @@ public class NewsController {
     public boolean delete(@PathVariable Integer id) {
         return newsService.removeById(id);
     }
+
+    // ================= 首页按城市查询 =================
+    @GetMapping("/homeListByCity")
+    public Map<String, List<News>> homeListByCity(@RequestParam String city) {
+        return newsService.homeListByAreaId(city);
+    }
+
+    // ================= 政策按城市查询 =================
+    @GetMapping("/policyListByCity")
+    public List<News> policyListByCity(@RequestParam String city) {
+        if ("all".equals(city)) {
+            return newsService.getPolicyList();
+        }
+        Integer areaId = switch (city) {
+            case "taiyuan" -> 1;
+            case "lvliang" -> 2;
+            case "jinzhong" -> 3;
+            default -> null;
+        };
+
+        var query = newsService.lambdaQuery()
+                .eq(News::getType, "policy");
+
+        if (areaId != null) {
+            query.eq(News::getAreaId, areaId);
+        }
+
+        return query.list();
+    }
+
+    // ================= 公告按城市查询 =================
+    @GetMapping("/noticeListByCity")
+    public List<News> noticeListByCity(@RequestParam String city) {
+        if ("all".equals(city)) {
+            return newsService.getNoticeList();
+        }
+        Integer areaId = switch (city) {
+            case "taiyuan" -> 1;
+            case "lvliang" -> 2;
+            case "jinzhong" -> 3;
+            default -> null;
+        };
+
+        var query = newsService.lambdaQuery()
+                .eq(News::getType, "notice");
+
+        if (areaId != null) {
+            query.eq(News::getAreaId, areaId);
+        }
+
+        return query.list();
+    }
+
 }
