@@ -1,68 +1,98 @@
 <template>
-    <div class="container">
-        <h2>用户提交门牌申请</h2>
-        <form @submit.prevent="submitForm">
-            <div class="form-item">
-                <label>联系电话：</label>
-                <input v-model="form.contactPhone" type="text" required>
-            </div>
-            <div class="form-item">
-                <label>申请理由：</label>
-                <textarea v-model="form.reason" required></textarea>
-            </div>
-            <button type="submit">提交申请</button>
-        </form>
+  <div class="page">
+    <Header />
+    <div class="content">
+      <div class="form-item">
+        <label>申请人姓名</label>
+        <input v-model="userName" type="text" placeholder="请输入姓名" />
+      </div>
+
+      <div class="form-item">
+        <label>联系电话</label>
+        <input v-model="form.contact_phone" type="text" placeholder="请输入电话" />
+      </div>
+
+      <div class="form-item">
+        <label>房屋详细地址</label>
+        <input v-model="address" type="text" placeholder="请输入详细地址" />
+      </div>
+
+      <div class="form-item">
+        <label>申请类型</label>
+        <select v-model="form.apply_type">
+          <option value="new">新门牌申请</option>
+          <option value="reissue">门牌补发</option>
+        </select>
+      </div>
+
+      <!-- 补发时显示：原门牌编号 + 丢失损坏情况 -->
+      <div v-if="form.apply_type === 'reissue'">
+        <div class="form-item">
+          <label>原门牌编号</label>
+          <input v-model="oldDoorNo" type="text" placeholder="请填写原有门牌编号" />
+        </div>
+        <div class="form-item">
+          <label>门牌丢失/损坏情况</label>
+          <textarea v-model="damageInfo" rows="2" placeholder="例如：丢失、破损、模糊不清"></textarea>
+        </div>
+      </div>
+
+      <div class="form-item">
+        <label>申请原因</label>
+        <textarea v-model="form.reason" rows="4" placeholder="请填写申请原因"></textarea>
+      </div>
+
+      <div class="btn-box">
+        <button @click="submitApply">提交申请</button>
+      </div>
     </div>
+  </div>
 </template>
 
 <script setup>
 import { ref } from 'vue'
 import axios from 'axios'
+import Header from '@/components/Header.vue'
 
+const userId = 1
+const areaId = 21
+
+// 完全对应你数据库表的字段
 const form = ref({
-    userId: 1, // 暂时写死，后续可以接登录后动态获取
-    contactPhone: '',
-    reason: '',
-    applyType: 'new'
+  apply_type: 'new',
+  contact_phone: '',
+  reason: '',
+  user_id: userId,
+  area_id: areaId
 })
 
-const submitForm = async () => {
-    await axios.post('http://localhost:8080/apply/user/submit', form.value)
-    alert('申请提交成功！')
-    // 清空表单
-    form.value.contactPhone = ''
-    form.value.reason = ''
+// 补发额外填写内容
+const userName = ref('')
+const address = ref('')
+const oldDoorNo = ref('')
+const damageInfo = ref('')
+
+const submitApply = async () => {
+  // 重要：把补发信息 合并写入 reason 里，不改动数据库！
+  if (form.value.apply_type === 'reissue') {
+    form.value.reason =
+        "原门牌编号：" + oldDoorNo.value +
+        " | 损坏/丢失情况：" + damageInfo.value +
+        " | 申请原因：" + form.value.reason
+  }
+
+  // 提交（只提交数据库有的字段）
+  await axios.post('http://localhost:8080/user/apply/submit', form.value)
+  alert('提交成功！')
 }
 </script>
 
 <style scoped>
-.container {
-    max-width: 600px;
-    margin: 0 auto;
-    padding: 20px;
-}
-
-.form-item {
-    margin: 15px 0;
-}
-
-label {
-    display: block;
-    margin-bottom: 5px;
-}
-
-input,
-textarea {
-    width: 100%;
-    padding: 8px;
-    box-sizing: border-box;
-}
-
-button {
-    padding: 8px 15px;
-    background: #42b983;
-    color: white;
-    border: none;
-    cursor: pointer;
-}
+.page { max-width: 1000px; margin: 0 auto; }
+.content { padding: 20px; }
+.form-item { margin-bottom: 15px; }
+.form-item label { display: block; margin-bottom: 5px; }
+input, select, textarea { width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 4px; }
+.btn-box { text-align: right; margin-top: 15px; }
+button { padding: 10px 25px; background: #165DFF; color: white; border: none; cursor: pointer; }
 </style>
