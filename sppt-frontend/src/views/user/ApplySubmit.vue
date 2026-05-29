@@ -57,36 +57,37 @@ import Header from '@/components/Header.vue'
 const userId = 1
 const areaId = 21
 
-// 完全对应你数据库表的字段
+// 这里改成 驼峰 ！！！和后端实体类一样
 const form = ref({
-  apply_type: 'new',
-  contact_phone: '',
+  applyType: 'new',
+  contactPhone: '',
   reason: '',
-  user_id: userId,
-  area_id: areaId
+  userId: userId,
+  areaId: areaId
 })
 
-// 补发额外填写内容
 const userName = ref('')
 const address = ref('')
 const oldDoorNo = ref('')
 const damageInfo = ref('')
 
 const submitApply = async () => {
-  // 重要：把补发信息 合并写入 reason 里，不改动数据库！
-  if (form.value.apply_type === 'reissue') {
+  if (form.value.applyType === 'reissue') {
     form.value.reason =
         "原门牌编号：" + oldDoorNo.value +
         " | 损坏/丢失情况：" + damageInfo.value +
         " | 申请原因：" + form.value.reason
   }
 
-  // 提交（只提交数据库有的字段）
-  await axios.post('http://localhost:8080/user/apply/submit', form.value)
-  alert('提交成功！')
+  try {
+    await axios.post('http://localhost:8080/user/apply/submit', form.value)
+    alert('提交成功！')
+  } catch (e) {
+    alert('提交失败')
+    console.error(e)
+  }
 }
 </script>
-
 <style scoped>
 .page { max-width: 1000px; margin: 0 auto; }
 .content { padding: 20px; }

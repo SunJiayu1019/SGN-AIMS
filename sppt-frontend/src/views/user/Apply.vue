@@ -6,9 +6,8 @@
         <thead>
         <tr>
           <th>ID</th>
-          <th>申请人</th>
+          <th>申请编号</th>
           <th>电话</th>
-          <th>地址</th>
           <th>申请类型</th>
           <th>状态</th>
           <th>申请时间</th>
@@ -17,9 +16,8 @@
         <tbody>
         <tr v-for="item in list" :key="item.id">
           <td>{{ item.id }}</td>
-          <td>{{ item.applicantName }}</td>
+          <td>{{ item.applyNo }}</td>
           <td>{{ item.contactPhone }}</td>
-          <td>{{ item.address }}</td>
           <td>{{ item.applyType === 'new' ? '新门牌申请' : '门牌补发' }}</td>
           <td>{{ item.status }}</td>
           <td>{{ item.createTime }}</td>

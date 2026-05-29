@@ -13,25 +13,38 @@ import java.util.List;
 @RequestMapping("/user/apply")
 public class ApplyUserController {
 
-    @Autowired  // 换成这个，Spring 自带，不用额外依赖
+    @Autowired
     private ApplyFormMapper applyFormMapper;
 
+    // 提交申请（修复版）
     @PostMapping("/submit")
     public String submit(@RequestBody ApplyForm form) {
+        // 自动生成申请编号
+        form.setApplyNo("APPLY" + System.currentTimeMillis());
+        // 给houseId一个默认值，避免数据库报错
+        if (form.getHouseId() == null) {
+            form.setHouseId(1L);
+        }
         form.setCreateTime(LocalDateTime.now());
         form.setStatus("PENDING");
         applyFormMapper.insert(form);
         return "提交成功";
     }
 
-    @GetMapping("/myList")
+    // 查询我的申请列表（修复：接口地址 list，applyType 可选）
+    @GetMapping("/list")
     public List<ApplyForm> myList(
             @RequestParam Long userId,
-            @RequestParam String applyType
+            @RequestParam(required = false) String applyType
     ) {
         LambdaQueryWrapper<ApplyForm> wrapper = new LambdaQueryWrapper<>();
         wrapper.eq(ApplyForm::getUserId, userId);
-        wrapper.eq(ApplyForm::getApplyType, applyType);
+
+        // 如果有传类型，才加筛选条件
+        if (applyType != null && !applyType.isEmpty()) {
+            wrapper.eq(ApplyForm::getApplyType, applyType);
+        }
+
         wrapper.orderByDesc(ApplyForm::getCreateTime);
         return applyFormMapper.selectList(wrapper);
     }

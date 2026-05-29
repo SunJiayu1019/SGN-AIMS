@@ -1,6 +1,5 @@
 <template>
   <div>
-    <!-- 1. 顶部栏（所有页面一样） -->
     <div class="header-top">
       <div class="left">
         <span>当前时间：{{ currentTime }}</span>
@@ -8,7 +7,7 @@
       <div class="right">
         <div class="city">
           <span>切换区域：</span>
-          <select v-model="city" @change="changeCity">
+          <select v-model="currentCity" @change="changeCity">
             <option value="all">山西省</option>
             <option value="taiyuan">太原市</option>
             <option value="lvliang">吕梁市</option>
@@ -19,12 +18,10 @@
       </div>
     </div>
 
-    <!-- 2. 蓝色条幅（自动切换文字） -->
     <div class="banner">
       <h2>{{ bannerText }}</h2>
     </div>
 
-    <!-- 3. 红色导航栏，已删除【门牌补发】 -->
     <nav class="nav">
       <router-link to="/user/home">首页</router-link>
       <router-link to="/user/policy">管理政策</router-link>
@@ -42,7 +39,6 @@
       <router-link to="/user/about">关于我们</router-link>
     </nav>
 
-    <!-- 登录弹窗 -->
     <div class="login-modal" v-if="loginShow" @click="loginShow=false">
       <div class="box" @click.stop>
         <h3>系统登录</h3>
@@ -66,14 +62,13 @@ import { ref, onMounted, computed } from 'vue'
 import { useRoute } from 'vue-router'
 
 const route = useRoute()
-const city = ref(localStorage.getItem('currentCity') || 'all')
+const currentCity = ref(localStorage.getItem('currentCity') || 'all')
 const currentTime = ref('')
 const loginShow = ref(false)
 const loginType = ref('user')
 const username = ref('')
 const password = ref('')
 
-// 自动根据页面切换蓝色条幅文字
 const bannerText = computed(() => {
   const path = route.path
   if (path === '/user/home' || path === '/') return '标准地名地址信息管理系统'
@@ -87,10 +82,13 @@ const bannerText = computed(() => {
 function updateTime() {
   currentTime.value = new Date().toLocaleString()
 }
+
+// 核心修复：切换时存入 localStorage
 function changeCity() {
-  localStorage.setItem('currentCity', city.value)
+  localStorage.setItem('currentCity', currentCity.value)
   window.location.reload()
 }
+
 function login() {
   if (!username.value || !password.value) {
     alert('请输入账号密码')
@@ -112,14 +110,13 @@ onMounted(() => {
   align-items: center;
   justify-content: space-between;
   padding: 10px 20px;
-  background: #f5f5f5;
+  background: #f5f5f3;
   font-size: 14px;
 }
 .right { gap: 12px; display: flex; align-items: center; }
 .city { gap: 6px; display: flex; align-items: center; }
 .login { padding: 4px 10px; background: #165DFF; color: white; border: none; border-radius: 4px; }
 
-/* 蓝色条幅 */
 .banner {
   height: 140px;
   background: #165DFF;
@@ -130,7 +127,6 @@ onMounted(() => {
   margin: 0;
 }
 
-/* 红色导航 */
 .nav {
   background: #c00;
   padding: 18px;
@@ -144,7 +140,7 @@ onMounted(() => {
   border-radius: 4px;
   display: inline-block;
 }
-.nav a:hover, .nav-item:hover { background: #a00000; }
+.nav a:hover, .nav-item:hover { background: #a0000; }
 .nav a.router-link-active { background: white; color: #c00; font-weight: bold; }
 
 .nav-dropdown { position: relative; display: inline-block; }
@@ -160,8 +156,13 @@ onMounted(() => {
 .nav-dropdown:hover .nav-drop-content { display: block; }
 
 .login-modal {
-  position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
-  background: #00000080; display: flex; align-items: center; justify-content: center; z-index: 999;
+  position: fixed; top: 0; left: 0;
+  width: 100vw; height: 100vh;
+  background: #00000080;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 999;
 }
 .box { background: white; padding: 30px; border-radius: 8px; width: 320px; text-align: center; }
 input { width: 100%; margin: 8px 0; padding: 10px; box-sizing: border-box; }
