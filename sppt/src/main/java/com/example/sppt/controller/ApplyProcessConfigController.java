@@ -1,51 +1,39 @@
 package com.example.sppt.controller;
 
-/**
- * @author sjy
- * @since 2026-05-28
- */
 import com.example.sppt.dto.ApplyProcessConfigDTO;
 import com.example.sppt.dto.Result;
 import com.example.sppt.service.ApplyProcessConfigService;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
+/**
+ * 审批流程配置接口（按申请类型）。
+ * 统一后：只依赖 Service，构造器注入，统一返回 Result；
+ *        "仅核心管理员可配置"的鉴权在 Service 内完成（依据 operatorId）。
+ * @author sjy
+ * @since 2026-05-28
+ */
 @RestController
 @RequestMapping("/api/process/config")
+@RequiredArgsConstructor
 public class ApplyProcessConfigController {
 
-    @Autowired
-    private ApplyProcessConfigService applyProcessConfigService;
-    /**
-     * 根据 区域ID 查询流程配置
-     */
-    @GetMapping("/area/{areaId}")
-    public Result<?> getByArea(@PathVariable Integer areaId) {
-        return applyProcessConfigService.getProcessConfigByArea(areaId);
+    private final ApplyProcessConfigService applyProcessConfigService;
+
+    // 按申请类型查询流程配置（new=门牌申请 / reissue=门牌补发）
+    @GetMapping("/type/{applyType}")
+    public Result<?> getByType(@PathVariable String applyType) {
+        return Result.success(applyProcessConfigService.getProcessConfigByType(applyType));
     }
 
-    /**
-     * 根据 区域ID 保存流程配置
-     */
-    @PostMapping("/save-by-area")
-    public Result<?> saveByArea(@RequestBody ApplyProcessConfigDTO dto) {
-        return applyProcessConfigService.saveProcessConfigByArea(dto);
+    // 按申请类型保存流程配置（仅核心管理员）
+    @PostMapping("/save-by-type")
+    public Result<?> saveByType(@RequestBody ApplyProcessConfigDTO dto) {
+        try {
+            applyProcessConfigService.saveProcessConfigByType(dto);
+            return Result.success("保存成功");
+        } catch (Exception e) {
+            return Result.fail(e.getMessage());
+        }
     }
-
-
-    /**
-     * 获取审批流程配置
-     * @param applyType new:门牌申请 reissue:门牌补发
-     */
-//    @GetMapping("/{applyType}")
-//    public Result<?> getConfig(@PathVariable String applyType) {
-//        return applyProcessConfigService.getProcessConfig(applyType);
-//    }
-    /**
-     * 保存审批流程配置
-     */
-//    @PostMapping("/save")
-//    public Result<?> saveConfig(@RequestBody ApplyProcessConfigDTO dto) {
-//        return applyProcessConfigService.saveProcessConfig(dto);
-//    }
 }

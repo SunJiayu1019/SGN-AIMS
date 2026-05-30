@@ -21,11 +21,14 @@ const router = useRouter()
 const list = ref([])
 const getCity = () => localStorage.getItem('currentCity') || 'all'
 
+// 后端已统一返回 Result<T>，此处统一拆包（兼容包装/未包装两种返回）
+const unwrap = (res) => (res.data?.data !== undefined ? res.data.data : res.data)
+
 async function loadData() {
   const res = await axios.get('http://localhost:8080/news/policyListByCity', {
     params: { city: getCity() }
   })
-  list.value = res.data
+  list.value = unwrap(res) || []
 }
 
 const goDetail = (id) => {

@@ -1,34 +1,18 @@
 package com.example.sppt.mapper;
 
+import com.baomidou.mybatisplus.core.mapper.BaseMapper;
+import com.example.sppt.entity.ApplyProcessNode;
+import org.apache.ibatis.annotations.Mapper;
+
 /**
+ * 审批流程节点 Mapper
+ * 说明：原先这里有 selectByAreaAndApplyType（从未被调用）和 selectAdminUsers
+ *      （与 SysUserMapper.selectAdminUsers 重复，且角色名写的是 '管理员'，
+ *       与实际角色编码 coreAdmin/normalAdmin 不一致）。已统一删除，
+ *       查询管理员一律走 SysUserService.getAdminUsers()。
  * @author sjy
  * @since 2026-05-28
  */
-
-import com.baomidou.mybatisplus.core.mapper.BaseMapper;
-import com.example.sppt.entity.ApplyProcessNode;
-import com.example.sppt.entity.SysUser;
-import org.apache.ibatis.annotations.Param;
-import org.apache.ibatis.annotations.Select;
-import org.springframework.stereotype.Repository;
-
-import java.util.List;
-
-@Repository
+@Mapper
 public interface ApplyProcessNodeMapper extends BaseMapper<ApplyProcessNode> {
-
-    // 注解版 SQL
-    @Select("SELECT * FROM apply_process_node " +
-            "WHERE area_id = #{areaId} AND node_level = #{nodeLevel}")
-    List<ApplyProcessNode> selectByAreaAndApplyType(
-            @Param("areaId") Integer areaId,
-            @Param("nodeLevel") Integer nodeLevel
-    );
-
-    // 查询所有管理员
-    @Select("SELECT u.* FROM sys_user u " +
-            "INNER JOIN sys_user_role ur ON u.id = ur.user_id " +
-            "INNER JOIN sys_role r ON ur.role_id = r.id " +
-            "WHERE r.role_name = '管理员'")
-    List<SysUser> selectAdminUsers();
 }

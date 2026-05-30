@@ -2,9 +2,10 @@
 import { ref } from 'vue'
 import axios from 'axios'
 import Header from '@/components/Header.vue'
+import { getUserId, getAreaId } from '@/utils/auth'
 
-const userId = 1
-const areaId = 21
+const userId = getUserId()
+const areaId = getAreaId() || 0
 
 const form = ref({
   contactPhone: "",
@@ -15,7 +16,7 @@ const form = ref({
 })
 
 const submitReissue = async () => {
-  await axios.post("/user/apply/submit", form.value)
+  await axios.post("http://localhost:8080/user/apply/submit", form.value)
   alert("补发提交成功")
 }
 </script>

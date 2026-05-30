@@ -33,12 +33,16 @@ const policyList = ref([])
 const noticeList = ref([])
 const getCity = () => localStorage.getItem('currentCity') || 'all'
 
+// 后端已统一返回 Result<T>，此处统一拆包（兼容包装/未包装两种返回）
+const unwrap = (res) => (res.data?.data !== undefined ? res.data.data : res.data)
+
 async function loadData() {
   const res = await axios.get('http://localhost:8080/news/homeListByCity', {
     params: { city: getCity() }
   })
-  policyList.value = res.data.policyList
-  noticeList.value = res.data.noticeList
+  const data = unwrap(res) || {}
+  policyList.value = data.policyList || []
+  noticeList.value = data.noticeList || []
 }
 
 const goDetail = (id) => {

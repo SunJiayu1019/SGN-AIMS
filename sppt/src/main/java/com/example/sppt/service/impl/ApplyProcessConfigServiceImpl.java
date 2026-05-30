@@ -1,104 +1,114 @@
 package com.example.sppt.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.example.sppt.dto.ApplyProcessConfigDTO;
-import com.example.sppt.dto.Result;
 import com.example.sppt.entity.ApplyProcessNode;
 import com.example.sppt.entity.SysUser;
 import com.example.sppt.mapper.ApplyProcessNodeMapper;
 import com.example.sppt.service.ApplyProcessConfigService;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import com.example.sppt.service.SysUserRoleService;
+import com.example.sppt.service.SysUserService;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.stream.Collectors;
 
+/**
+ * 审批流程配置 Service 实现（按申请类型）。
+ * 统一后：继承 ServiceImpl 复用 BaseMapper；跨 Service 依赖走构造器注入；
+ *        Result 包装交给 Controller。
+ * @author sjy
+ * @since 2026-05-28
+ */
 @Service
-public class ApplyProcessConfigServiceImpl implements ApplyProcessConfigService {
+@RequiredArgsConstructor
+public class ApplyProcessConfigServiceImpl
+        extends ServiceImpl<ApplyProcessNodeMapper, ApplyProcessNode>
+        implements ApplyProcessConfigService {
 
-    private static final Logger log = LoggerFactory.getLogger(ApplyProcessConfigServiceImpl.class);
-    private final ApplyProcessNodeMapper applyProcessNodeMapper;
+    private final SysUserService sysUserService;
+    private final SysUserRoleService sysUserRoleService;
 
-    public ApplyProcessConfigServiceImpl(ApplyProcessNodeMapper applyProcessNodeMapper) {
-        this.applyProcessNodeMapper = applyProcessNodeMapper;
+    // 本配置为全局，区域固定用 0（总站）
+    private static final int GLOBAL_AREA = 0;
+
+    // 各申请类型的默认级数
+    private int defaultLevel(String applyType) {
+        return "new".equals(applyType) ? 3 : 1;   // 门牌申请 3 级，门牌补发 1 级
     }
 
-    /**
-     * 根据 区域ID 查询审批流程配置
-     */
-    public Result<?> getProcessConfigByArea(Integer areaId) {
-        // 1. 根据 areaId 查询该区域所有审批级别（1~5级）
-        LambdaQueryWrapper<ApplyProcessNode> wrapper = new LambdaQueryWrapper<>();
-        wrapper.eq(ApplyProcessNode::getAreaId, areaId);
-        wrapper.orderByAsc(ApplyProcessNode::getNodeLevel);
-        List<ApplyProcessNode> configList = applyProcessNodeMapper.selectList(wrapper);
+    @Override
+    public List<ApplyProcessNode> getProcessConfigByType(String applyType) {
+        // 1. 查询已保存的配置（按级别升序）
+        List<ApplyProcessNode> configList = list(new LambdaQueryWrapper<ApplyProcessNode>()
+                .eq(ApplyProcessNode::getAreaId, GLOBAL_AREA)
+                .eq(ApplyProcessNode::getApplyType, applyType)
+                .orderByAsc(ApplyProcessNode::getNodeLevel));
 
-        // 2. 没有配置 → 自动生成默认 1级流程
-        if (configList == null || configList.isEmpty()) {
-            List<SysUser> adminUsers = applyProcessNodeMapper.selectAdminUsers();
+        if (configList != null && !configList.isEmpty()) {
+            return configList;
+        }
+
+        // 2. 没有配置 -> 生成默认流程（new=3 级 / reissue=1 级），
+        //    从用户表的管理员里自动分配，每级分配一个（管理员不足时循环复用）。
+        int levels = defaultLevel(applyType);
+        List<SysUser> admins = sysUserService.getAdminUsers();
+
+        List<ApplyProcessNode> result = new ArrayList<>();
+        for (int i = 1; i <= levels; i++) {
             ApplyProcessNode node = new ApplyProcessNode();
-            node.setAreaId(areaId);
-            node.setNodeLevel(1);
+            node.setAreaId(GLOBAL_AREA);
+            node.setApplyType(applyType);
+            node.setNodeLevel(i);
             node.setAuditType("ONE");
-
-            // 默认给第一个管理员
-            if (!adminUsers.isEmpty()) {
-                String userIds = adminUsers.get(0).getId().toString();
-                node.setAuditUserIds(userIds);
+            if (admins != null && !admins.isEmpty()) {
+                SysUser admin = admins.get((i - 1) % admins.size());
+                node.setAuditUserIds(admin.getId().toString());
             } else {
                 node.setAuditUserIds("");
             }
-
-            List<ApplyProcessNode> result = new ArrayList<>();
             result.add(node);
-            return Result.success(result);
         }
-
-        return Result.success(configList);
+        return result;
     }
 
-    /**
-     * 按 区域ID 保存审批流程
-     * 支持 1~5级
-     */
+    @Override
     @Transactional
-    public Result<?> saveProcessConfigByArea(ApplyProcessConfigDTO dto) {
-        try {
-            Integer areaId = dto.getAreaId();
-            Integer maxLevel = dto.getNodeLevel();
-            List<List<String>> adminList = dto.getAuditUserIdsList();
+    public void saveProcessConfigByType(ApplyProcessConfigDTO dto) {
+        // 0. 仅核心管理员可配置
+        if (dto.getOperatorId() == null
+                || !sysUserRoleService.hasRole(dto.getOperatorId(), "coreAdmin")) {
+            throw new IllegalArgumentException("只有核心管理员可以配置审批流程");
+        }
 
-            // 1. 删除该区域原有配置
-            LambdaQueryWrapper<ApplyProcessNode> delWrapper = new LambdaQueryWrapper<>();
-            delWrapper.eq(ApplyProcessNode::getAreaId, areaId);
-            applyProcessNodeMapper.delete(delWrapper);
+        String applyType = dto.getApplyType();
+        Integer maxLevel = dto.getNodeLevel();
+        List<List<String>> adminList = dto.getAuditUserIdsList();
 
-            // 2. 逐级保存
-            for (int i = 0; i < maxLevel; i++) {
-                int level = i + 1;
-                List<String> userIds = adminList.get(i);
+        if (applyType == null || maxLevel == null || maxLevel < 1
+                || adminList == null || adminList.size() < maxLevel) {
+            throw new IllegalArgumentException("审批流程配置参数不完整");
+        }
 
-                ApplyProcessNode node = new ApplyProcessNode();
-                node.setAreaId(areaId);
-                node.setNodeLevel(level);
-                node.setAuditUserIds(String.join(",", userIds));
-                node.setAuditType("ONE");
+        // 1. 删除该申请类型原有配置
+        remove(new LambdaQueryWrapper<ApplyProcessNode>()
+                .eq(ApplyProcessNode::getAreaId, GLOBAL_AREA)
+                .eq(ApplyProcessNode::getApplyType, applyType));
 
-                applyProcessNodeMapper.insert(node);
-            }
+        // 2. 逐级保存
+        for (int i = 0; i < maxLevel; i++) {
+            List<String> userIds = adminList.get(i);
 
-            return Result.success("保存成功");
-        } catch (Exception e) {
-            log.error("保存区域审批流程失败", e);
-            return Result.fail("保存失败");
+            ApplyProcessNode node = new ApplyProcessNode();
+            node.setAreaId(GLOBAL_AREA);
+            node.setApplyType(applyType);
+            node.setNodeLevel(i + 1);
+            node.setAuditUserIds(userIds == null ? "" : String.join(",", userIds));
+            node.setAuditType("ONE");
+            save(node);
         }
     }
-
-//    @Override
-//    public Result<?> getProcessConfig(String applyType) {
-//        return Result.success(new ArrayList<>());
-//    }
 }

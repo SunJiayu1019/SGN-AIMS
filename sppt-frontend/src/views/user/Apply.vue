@@ -34,15 +34,19 @@
 import { ref, onMounted } from 'vue'
 import axios from 'axios'
 import Header from '@/components/Header.vue'
+import { getUserId } from '@/utils/auth'
 
-const userId = 1
+const userId = getUserId()
 const list = ref([])
+
+// 后端已统一返回 Result<T>，此处统一拆包（兼容包装/未包装两种返回）
+const unwrap = (res) => (res.data?.data !== undefined ? res.data.data : res.data)
 
 async function loadList() {
   const res = await axios.get('http://localhost:8080/user/apply/list', {
     params: { userId: userId }
   })
-  list.value = res.data
+  list.value = unwrap(res) || []
 }
 
 onMounted(() => {

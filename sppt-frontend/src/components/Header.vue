@@ -15,7 +15,16 @@
             <option value="jinzhong">晋中市</option>
           </select>
         </div>
-        <button class="login" @click="loginShow = true">登录</button>
+
+        <!-- 未登录：登录 / 注册；已登录：欢迎 + 退出 -->
+        <template v-if="user">
+          <span class="welcome">你好，{{ user.realName || user.phone }}</span>
+          <button class="login" @click="logout">退出登录</button>
+        </template>
+        <template v-else>
+          <button class="login" @click="goLogin">登录</button>
+          <button class="register" @click="goRegister">注册</button>
+        </template>
       </div>
     </div>
 
@@ -24,7 +33,7 @@
       <h2>{{ bannerText }}</h2>
     </div>
 
-    <!-- 3. 红色导航栏，已删除【门牌补发】 -->
+    <!-- 3. 红色导航栏 -->
     <nav class="nav">
       <router-link to="/user/home">首页</router-link>
       <router-link to="/user/policy">管理政策</router-link>
@@ -41,37 +50,19 @@
       <router-link to="/user/check">门牌排查</router-link>
       <router-link to="/user/about">关于我们</router-link>
     </nav>
-
-    <!-- 登录弹窗 -->
-    <div class="login-modal" v-if="loginShow" @click="loginShow=false">
-      <div class="box" @click.stop>
-        <h3>系统登录</h3>
-        <select v-model="loginType">
-          <option value="user">普通用户</option>
-          <option value="admin">管理员</option>
-        </select>
-        <input type="text" placeholder="账号" v-model="username" />
-        <input type="password" placeholder="密码" v-model="password" />
-        <div class="btns">
-          <button @click="login">登录</button>
-          <button @click="loginShow=false">取消</button>
-        </div>
-      </div>
-    </div>
   </div>
 </template>
 
 <script setup>
 import { ref, onMounted, computed } from 'vue'
-import { useRoute } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
+import { getUser, clearUser } from '@/utils/auth'
 
 const route = useRoute()
+const router = useRouter()
 const city = ref(localStorage.getItem('currentCity') || 'all')
 const currentTime = ref('')
-const loginShow = ref(false)
-const loginType = ref('user')
-const username = ref('')
-const password = ref('')
+const user = ref(getUser())
 
 // 自动根据页面切换蓝色条幅文字
 const bannerText = computed(() => {
@@ -91,13 +82,16 @@ function changeCity() {
   localStorage.setItem('currentCity', city.value)
   window.location.reload()
 }
-function login() {
-  if (!username.value || !password.value) {
-    alert('请输入账号密码')
-    return
-  }
-  alert('登录成功！')
-  loginShow.value = false
+function goLogin() {
+  router.push('/login')
+}
+function goRegister() {
+  router.push('/register')
+}
+function logout() {
+  clearUser()
+  user.value = null
+  router.push('/login')
 }
 
 onMounted(() => {
@@ -117,7 +111,9 @@ onMounted(() => {
 }
 .right { gap: 12px; display: flex; align-items: center; }
 .city { gap: 6px; display: flex; align-items: center; }
-.login { padding: 4px 10px; background: #165DFF; color: white; border: none; border-radius: 4px; }
+.welcome { color: #333; }
+.login { padding: 4px 10px; background: #165DFF; color: white; border: none; border-radius: 4px; cursor: pointer; }
+.register { padding: 4px 10px; background: #2ba471; color: white; border: none; border-radius: 4px; cursor: pointer; }
 
 /* 蓝色条幅 */
 .banner {
@@ -158,13 +154,4 @@ onMounted(() => {
 }
 .nav-drop-content a { color: #333 !important; padding: 10px; display: block; text-align: left; }
 .nav-dropdown:hover .nav-drop-content { display: block; }
-
-.login-modal {
-  position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
-  background: #00000080; display: flex; align-items: center; justify-content: center; z-index: 999;
-}
-.box { background: white; padding: 30px; border-radius: 8px; width: 320px; text-align: center; }
-input { width: 100%; margin: 8px 0; padding: 10px; box-sizing: border-box; }
-.btns { display: flex; gap: 10px; margin-top: 10px; }
-.btns button { flex: 1; padding: 10px; background: #165DFF; color: white; border: none; border-radius: 4px; }
 </style>
