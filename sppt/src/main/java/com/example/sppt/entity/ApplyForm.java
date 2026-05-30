@@ -1,5 +1,6 @@
 package com.example.sppt.entity;
 
+<<<<<<< HEAD
 /**
  * 门牌申请表
  *
@@ -15,6 +16,8 @@ package com.example.sppt.entity;
  * @since 2026-05-27
  */
 
+=======
+>>>>>>> 5039016ff1150fc0acaa89916f528ff1f5c6b387
 import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
@@ -26,6 +29,7 @@ import java.time.LocalDateTime;
 public class ApplyForm {
     @TableId(type = IdType.AUTO)
     private Long id;
+<<<<<<< HEAD
     private String applyNo;          // 申请单号
     private String applyType;        // 申请类型 new/reissue
     private Long userId;             // 申请人ID
@@ -39,3 +43,17 @@ public class ApplyForm {
     private Long areaId;             // 所属区域ID（补映射）
     private LocalDateTime createTime;
 }
+=======
+    private String applyNo;
+    private String applyType;
+    private Long userId;
+    private String contactPhone;
+    private Long houseId;
+    private String reason;
+    private String status;
+    private LocalDateTime createTime;
+
+    // 新增：areaId 字段，和前端对应
+    private Long areaId;
+}
+>>>>>>> 5039016ff1150fc0acaa89916f528ff1f5c6b387

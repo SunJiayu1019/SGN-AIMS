@@ -10,4 +10,8 @@ import org.apache.ibatis.annotations.Mapper;
  */
 @Mapper
 public interface HouseInfoMapper extends BaseMapper<HouseInfo> {
+<<<<<<< HEAD
 }
+=======
+}
+>>>>>>> 5039016ff1150fc0acaa89916f528ff1f5c6b387

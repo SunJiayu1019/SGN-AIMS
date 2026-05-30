@@ -8,3 +8,5 @@ spring:
 mybatis-plus:
   mapper-locations: classpath:mapper/*.xml
   type-aliases-package: com.example.sppt.entity
+  configuration:
+    map-underscore-to-camel-case: true   # 关键：下划线自动转驼峰

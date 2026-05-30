@@ -68,6 +68,7 @@ import { getUserId, getAreaId } from '@/utils/auth'
 const userId = getUserId()
 const areaId = getAreaId() || 0
 
+<<<<<<< HEAD
 // 字段名与后端实体 ApplyForm 保持一致（驼峰），否则提交后字段会存成 NULL
 const form = ref({
   applicantName: '',   // 申请人姓名
@@ -76,16 +77,31 @@ const form = ref({
   detailAddress: '',   // 房屋详细地址（新申请时门牌未生成，地址必须落在申请表）
   applyType: 'new',    // 申请类型 new / reissue
   reason: '',          // 申请原因
+=======
+// 这里改成 驼峰 ！！！和后端实体类一样
+const form = ref({
+  applyType: 'new',
+  contactPhone: '',
+  reason: '',
+>>>>>>> 5039016ff1150fc0acaa89916f528ff1f5c6b387
   userId: userId,
   areaId: areaId
 })
 
+<<<<<<< HEAD
 // 补发额外填写内容
+=======
+const userName = ref('')
+const address = ref('')
+>>>>>>> 5039016ff1150fc0acaa89916f528ff1f5c6b387
 const oldDoorNo = ref('')
 const damageInfo = ref('')
 
 const submitApply = async () => {
+<<<<<<< HEAD
   // 补发信息合并写入 reason，不额外增加数据库字段
+=======
+>>>>>>> 5039016ff1150fc0acaa89916f528ff1f5c6b387
   if (form.value.applyType === 'reissue') {
     form.value.reason =
         "原门牌编号：" + oldDoorNo.value +
@@ -93,14 +109,23 @@ const submitApply = async () => {
         " | 申请原因：" + form.value.reason
   }
 
+<<<<<<< HEAD
   // apply_no 在数据库中为唯一非空，前端先生成一个编号，保证插入成功
   const payload = { ...form.value, applyNo: 'AP' + Date.now() }
 
   await axios.post('http://localhost:8080/user/apply/submit', payload)
   alert('提交成功！')
+=======
+  try {
+    await axios.post('http://localhost:8080/user/apply/submit', form.value)
+    alert('提交成功！')
+  } catch (e) {
+    alert('提交失败')
+    console.error(e)
+  }
+>>>>>>> 5039016ff1150fc0acaa89916f528ff1f5c6b387
 }
 </script>
-
 <style scoped>
 .page { max-width: 1000px; margin: 0 auto; }
 .content { padding: 20px; }

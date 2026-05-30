@@ -1,12 +1,14 @@
 package com.example.sppt.controller;
 
+<<<<<<< HEAD
 import com.example.sppt.dto.Result;
+=======
+>>>>>>> 5039016ff1150fc0acaa89916f528ff1f5c6b387
 import com.example.sppt.entity.HouseInfo;
 import com.example.sppt.service.HouseService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
@@ -23,9 +25,20 @@ public class HouseController {
 
     private final HouseService houseService;
 
-    // 按区域ID查询门牌列表（用于门牌排查页面）
     @GetMapping("/list")
+<<<<<<< HEAD
     public Result<List<HouseInfo>> list(@RequestParam Long areaId) {
         return Result.success(houseService.listByArea(areaId));
+=======
+    public List<HouseInfo> list() {
+        // 直接查询所有数据，不做任何过滤
+        List<HouseInfo> list = houseInfoMapper.selectList(null);
+        // 控制台打印，确认数据是否正常
+        System.out.println("===== 查到数据条数：" + list.size());
+        for (HouseInfo h : list) {
+            System.out.println(h.getId() + " | " + h.getHouseCode() + " | " + h.getAddress() + " | " + h.getHouseType() + " | " + h.getStatus());
+        }
+        return list;
+>>>>>>> 5039016ff1150fc0acaa89916f528ff1f5c6b387
     }
 }
