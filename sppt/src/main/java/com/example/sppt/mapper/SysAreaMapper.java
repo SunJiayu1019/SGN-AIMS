@@ -1,9 +1,5 @@
 package com.example.sppt.mapper;
 
-<<<<<<< HEAD
-=======
-
->>>>>>> 5039016ff1150fc0acaa89916f528ff1f5c6b387
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import com.example.sppt.entity.SysArea;
 import org.apache.ibatis.annotations.Mapper;
@@ -15,8 +11,4 @@ import org.apache.ibatis.annotations.Mapper;
  */
 @Mapper
 public interface SysAreaMapper extends BaseMapper<SysArea> {
-<<<<<<< HEAD
 }
-=======
-}
->>>>>>> 5039016ff1150fc0acaa89916f528ff1f5c6b387

@@ -16,11 +16,8 @@
 
     <!-- 工具栏：按子站筛选 + 新增 -->
     <div class="toolbar">
-      <select v-model="filterAreaId" @change="loadList">
-        <option value="">全部子站</option>
-        <option :value="0">总站（全省）</option>
-        <option v-for="a in areaList" :key="a.id" :value="a.id">{{ a.name }}</option>
-      </select>
+      <!-- 多级级联筛选：山西省 -> 市 -> 区县；选省看全省、选市看全市 -->
+      <AreaCascader v-model="filterAreaId" :include-all="true" @change="loadList" />
       <button class="btn plain" @click="loadList">刷新</button>
       <button class="btn add" @click="toggleForm">
         {{ showForm ? '收起表单' : (activeType === 'policy' ? '+ 上传政策' : '+ 上传公告') }}
@@ -46,10 +43,7 @@
 
       <div class="form-row">
         <label>所属子站</label>
-        <select v-model="form.areaId">
-          <option :value="0">总站（全省）</option>
-          <option v-for="a in areaList" :key="a.id" :value="a.id">{{ a.name }}</option>
-        </select>
+        <AreaCascader v-model="form.areaId" :include-all="true" />
       </div>
 
       <div class="form-row">
@@ -110,6 +104,7 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import axios from 'axios'
+import AreaCascader from '@/components/AreaCascader.vue'
 
 // /news 接口未走 Vite 代理（只代理了 /api），统一用后端绝对地址
 const API = 'http://localhost:8080'
@@ -118,12 +113,14 @@ const activeType = ref('policy')   // policy 政策 / notice 公告
 const list = ref([])
 const areaList = ref([])
 const areaMap = ref({})
-const filterAreaId = ref('')       // '' 表示全部子站
+const filterAreaId = ref('')       // '' 表示全部子站（级联组件的“全部”哨兵值）
 const showForm = ref(false)
 
 // 表单字段对应 portal_news 表：title / content / type / areaId / publisherId
 // （id 仅编辑时携带；createTime 新增时由后端自动生成）
-const emptyForm = () => ({ id: null, title: '', content: '', areaId: 0, publisherId: '' })
+// areaId 用 '' 表示「总站/全省」，与级联组件的“全部”哨兵值保持一致；
+// 提交后端时再把 '' 转成 0（数据库约定 area_id=0 即总站）。
+const emptyForm = () => ({ id: null, title: '', content: '', areaId: '', publisherId: '' })
 const form = ref(emptyForm())
 
 // 后端已统一返回 Result<T>，此处统一拆包（兼容包装/未包装两种返回）
@@ -181,7 +178,8 @@ function editRow(row) {
     id: row.id,
     title: row.title,
     content: row.content,
-    areaId: row.areaId == null ? 0 : row.areaId,
+    // 数据库里 0 / null 都视为总站 -> 用 '' 让级联组件回显为“全部（不限）”
+    areaId: (row.areaId == null || row.areaId === 0) ? '' : row.areaId,
     publisherId: row.publisherId == null ? '' : row.publisherId
   }
   showForm.value = true
@@ -193,12 +191,14 @@ async function submitForm() {
     alert('标题不能为空')
     return
   }
-  // 组装提交对象：area_id 转 Number，publisherId 为空则不传
+  // 组装提交对象：
+  //   areaId 为 ''（总站/全省）-> 转成 0；选了具体市/区县 -> 用该区域真实 id
+  //   publisherId 为空则不传（保持 null）
   const payload = {
     title: form.value.title,
     content: form.value.content,
     type: activeType.value,
-    areaId: Number(form.value.areaId)
+    areaId: form.value.areaId === '' ? 0 : Number(form.value.areaId)
   }
   if (form.value.publisherId !== '' && form.value.publisherId != null) {
     payload.publisherId = Number(form.value.publisherId)

@@ -7,6 +7,8 @@ import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.example.sppt.entity.News;
 import com.example.sppt.mapper.NewsMapper;
 import com.example.sppt.service.NewsService;
+import com.example.sppt.service.SysAreaService;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
@@ -15,23 +17,28 @@ import java.util.List;
 import java.util.Map;
 
 @Service
+@RequiredArgsConstructor
 public class NewsServiceImpl extends ServiceImpl<NewsMapper, News>
         implements NewsService {
 
+    private final SysAreaService sysAreaService;
+
     /**
-     * 城市编码 -> 区域ID 的唯一映射（原先 Controller 和 Service 各写了一份，现统一在此）。
-     * 与后端约定：1=太原 2=吕梁 3=晋中。返回 null 表示“不限区域”。
+     * 兼容老的“城市编码”入参（taiyuan/lvliang/jinzhong/all）。
+     * 现在统一改为查 sys_area 表里 code 对应的区域 id，而不是写死的 1/2/3，
+     * 这样新增了别的市/区也不用改代码。
+     * 返回 null 表示“不限区域”。
      */
     private Integer cityToAreaId(String city) {
-        if (city == null || "all".equals(city)) {
+        if (city == null || "all".equals(city) || city.isBlank()) {
             return null;
         }
-        return switch (city) {
-            case "taiyuan" -> 1;
-            case "lvliang" -> 2;
-            case "jinzhong" -> 3;
-            default -> null;
-        };
+        // 约定 sys_area.code 用城市拼音（taiyuan/lvliang/jinzhong…）；
+        // 若你的 code 是行政区划数字编码，把这里换成按 name 查即可。
+        var area = sysAreaService.lambdaQuery()
+                .eq(com.example.sppt.entity.SysArea::getCode, city)
+                .one();
+        return area == null ? null : area.getId().intValue();
     }
 
     @Override
@@ -48,6 +55,7 @@ public class NewsServiceImpl extends ServiceImpl<NewsMapper, News>
     public List<News> getPolicyListTopN(int n) {
         return list(new LambdaQueryWrapper<News>()
                 .eq(News::getType, "policy")
+                .orderByDesc(News::getId)
                 .last("LIMIT " + n));
     }
 
@@ -55,51 +63,40 @@ public class NewsServiceImpl extends ServiceImpl<NewsMapper, News>
     public List<News> getNoticeListTopN(int n) {
         return list(new LambdaQueryWrapper<News>()
                 .eq(News::getType, "notice")
+                .orderByDesc(News::getId)
                 .last("LIMIT " + n));
     }
 
     @Override
     public List<News> getPolicyList() {
         return list(new LambdaQueryWrapper<News>()
-                .eq(News::getType, "policy"));
+                .eq(News::getType, "policy")
+                .orderByDesc(News::getId));
     }
 
     @Override
     public List<News> getNoticeList() {
         return list(new LambdaQueryWrapper<News>()
-                .eq(News::getType, "notice"));
+                .eq(News::getType, "notice")
+                .orderByDesc(News::getId));
     }
 
     @Override
     public IPage<News> pageByType(String type, int pageNum, int pageSize) {
         return page(new Page<>(pageNum, pageSize),
-                new LambdaQueryWrapper<News>().eq(News::getType, type));
+                new LambdaQueryWrapper<News>()
+                        .eq(News::getType, type)
+                        .orderByDesc(News::getId));
     }
 
     @Override
     public Map<String, List<News>> homeListByAreaId(String city) {
-        List<News> policyList;
-        List<News> noticeList;
-
         Integer areaId = cityToAreaId(city);
 
-        if (areaId == null) {
-            // 全省：政策 / 公告各取 6 条
-            policyList = list(new LambdaQueryWrapper<News>()
-                    .eq(News::getType, "policy")
-                    .last("LIMIT 6"));
-            noticeList = list(new LambdaQueryWrapper<News>()
-                    .eq(News::getType, "notice")
-                    .last("LIMIT 6"));
-        } else {
-            // 具体市：显示该市全部
-            policyList = list(new LambdaQueryWrapper<News>()
-                    .eq(News::getType, "policy")
-                    .eq(News::getAreaId, areaId));
-            noticeList = list(new LambdaQueryWrapper<News>()
-                    .eq(News::getType, "notice")
-                    .eq(News::getAreaId, areaId));
-        }
+        // 关键：按“该区域 + 其所有下级区域”来查，而不是只查这一个 areaId。
+        // 例如选中山西省，会把太原/吕梁…以及下属各区县的内容都查出来。
+        List<News> policyList = listByTypeAndArea("policy", areaId);
+        List<News> noticeList = listByTypeAndArea("notice", areaId);
 
         Map<String, List<News>> map = new HashMap<>();
         map.put("policyList", policyList);
@@ -119,11 +116,17 @@ public class NewsServiceImpl extends ServiceImpl<NewsMapper, News>
 
     @Override
     public List<News> listByTypeAndArea(String type, Integer areaId) {
+        // 把“某个区域”展开成“它自己 + 全部下级区域”的 id 列表，
+        // 实现“点击省看到全省、点击市看到全市”的层级聚合效果。
+        List<Integer> areaIds = sysAreaService.listSelfAndDescendantIds(areaId);
+
         LambdaQueryWrapper<News> wrapper = new LambdaQueryWrapper<>();
         wrapper.eq(News::getType, type);
-        if (areaId != null) {
-            wrapper.eq(News::getAreaId, areaId);
+        if (areaIds != null) {
+            // areaId 非空 -> 限定在 自身+子孙 范围内
+            wrapper.in(News::getAreaId, areaIds);
         }
+        // areaIds == null（传入 null/0）-> 不加区域条件，查全部
         wrapper.orderByDesc(News::getId);
         return list(wrapper);
     }
@@ -133,6 +136,8 @@ public class NewsServiceImpl extends ServiceImpl<NewsMapper, News>
         if (news.getCreateTime() == null) {
             news.setCreateTime(LocalDateTime.now());
         }
+        // publisherId / areaId 由前端表单提交，MyBatis-Plus 会按字段原样写入；
+        // 这里不再对它们做任何覆盖，确保“发布人ID / 所属子站”都能正确入库。
         return save(news);
     }
 }

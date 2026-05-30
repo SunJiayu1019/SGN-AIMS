@@ -39,22 +39,8 @@ const currentCity = ref('all')
 
 const getCity = () => localStorage.getItem('currentCity') || 'all'
 
-<<<<<<< HEAD
 // 后端已统一返回 Result<T>，此处统一拆包（兼容包装/未包装两种返回）
 const unwrap = (res) => (res.data?.data !== undefined ? res.data.data : res.data)
-=======
-// 👇 新增：计算显示文字（主站 / 子站）
-const siteText = computed(() => {
-  const map = {
-    all: '🏠 主站（山西省）',
-    taiyuan: '🏙️ 太原市子站',
-    lvliang: '🏙️ 吕梁市子站',
-    jinzhong: '🏙️ 晋中市子站'
-  }
-  return map[currentCity.value] || '🏠 主站（山西省）'
-})
->>>>>>> 5039016ff1150fc0acaa89916f528ff1f5c6b387
-
 async function loadData() {
   const res = await axios.get('http://localhost:8080/news/homeListByCity', {
     params: { city: getCity() }

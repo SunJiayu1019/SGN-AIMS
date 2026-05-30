@@ -70,17 +70,13 @@ import axios from 'axios'
 import Header from '@/components/Header.vue'
 import { getAreaId } from '@/utils/auth'
 
-<<<<<<< HEAD
 const areaId = getAreaId() || 0
-=======
->>>>>>> 5039016ff1150fc0acaa89916f528ff1f5c6b387
 const list = ref([])
 const searchKey = ref('')
 const areaId = ref('')
 const houseType = ref('')
 const status = ref('')
 
-<<<<<<< HEAD
 // 后端已统一返回 Result<T>，此处统一拆包（兼容包装/未包装两种返回）
 const unwrap = (res) => (res.data?.data !== undefined ? res.data.data : res.data)
 
@@ -89,16 +85,6 @@ const loadHouse = async () => {
     params: { areaId: areaId }
   })
   list.value = unwrap(res) || []
-=======
-const loadList = async () => {
-  try {
-    const res = await axios.get('http://localhost:8080/user/house/list')
-    list.value = res.data
-  } catch (e) {
-    console.error('加载失败：', e)
-    list.value = []
-  }
->>>>>>> 5039016ff1150fc0acaa89916f528ff1f5c6b387
 }
 
 const showList = computed(() => {
