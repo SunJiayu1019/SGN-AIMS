@@ -46,7 +46,7 @@ public class RbacController {
         return Result.success(sysRolePermService.getPermIdsByRoleId(roleId));
     }
 
-    // 为角色分配权限（整体覆盖保存）
+    // 为角色分配权限
     @PostMapping("/role/perms")
     public Result<String> assign(@RequestBody RolePermDTO dto) {
         try {

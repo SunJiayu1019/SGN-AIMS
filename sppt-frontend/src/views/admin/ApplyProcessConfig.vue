@@ -15,33 +15,62 @@
 
       <!-- 两类申请各一个配置块 -->
       <div class="config-block" v-for="blk in blocks" :key="blk.type">
-        <div class="block-title">{{ blk.label }}（{{ blk.type }}）</div>
-
-        <div class="form-item">
-          <label>审批级数：</label>
-          <input
-            type="number"
-            min="1"
-            max="5"
-            v-model.number="configs[blk.type].level"
-            @input="adjustLevel(blk.type)"
-          />
+        <div class="block-head">
+          <div class="block-title">
+            {{ blk.label }}
+            <span class="type-tag">{{ blk.type }}</span>
+          </div>
+          <div class="level-control">
+            <span class="level-label">审批级数</span>
+            <button class="step-btn" @click="changeLevel(blk.type, -1)" :disabled="configs[blk.type].level <= 1">−</button>
+            <input
+                type="number"
+                min="1"
+                max="5"
+                v-model.number="configs[blk.type].level"
+                @input="adjustLevel(blk.type)"
+            />
+            <button class="step-btn" @click="changeLevel(blk.type, 1)" :disabled="configs[blk.type].level >= 5">＋</button>
+          </div>
         </div>
 
-        <div class="form-item top">
-          <label>审核人配置：</label>
-          <div class="level-list">
-            <div
-              class="level-item"
+        <!-- 审核人配置：每一级一张卡片，点击头像标签即可选/取消 -->
+        <div class="level-cards">
+          <div
+              class="level-card"
               v-for="(lv, index) in configs[blk.type].level"
               :key="index"
-            >
-              <span>第 {{ index + 1 }} 级：</span>
-              <select v-model="configs[blk.type].selected[index]" multiple class="multi-select">
-                <option v-for="u in adminList" :key="u.id" :value="u.id + ''">
-                  {{ u.realName }}（{{ u.phone }}）
-                </option>
-              </select>
+          >
+            <div class="level-card-head">
+              <span class="level-badge">第 {{ index + 1 }} 级</span>
+              <span class="picked-count">
+                已选 {{ (configs[blk.type].selected[index] || []).length }} 人
+              </span>
+            </div>
+
+            <div class="admin-grid">
+              <label
+                  v-for="u in adminList"
+                  :key="u.id"
+                  class="admin-chip"
+                  :class="{ checked: isPicked(blk.type, index, u.id) }"
+              >
+                <input
+                    type="checkbox"
+                    :value="u.id + ''"
+                    v-model="configs[blk.type].selected[index]"
+                />
+                <span class="avatar">{{ (u.realName || '?').charAt(0) }}</span>
+                <span class="chip-info">
+                  <span class="chip-name">{{ u.realName }}</span>
+                  <span class="chip-phone">{{ u.phone }}</span>
+                </span>
+                <span class="tick">✓</span>
+              </label>
+
+              <div v-if="adminList.length === 0" class="no-admin">
+                暂无可选管理员
+              </div>
             </div>
           </div>
         </div>
@@ -86,6 +115,18 @@ function adjustLevel(type) {
   const sel = configs[type].selected
   while (sel.length < lvl) sel.push([])
   if (sel.length > lvl) sel.splice(lvl)
+}
+
+// 步进按钮：在 1~5 范围内调整级数
+function changeLevel(type, delta) {
+  configs[type].level = (configs[type].level || 1) + delta
+  adjustLevel(type)
+}
+
+// 判断某级是否已选中某管理员（用于卡片高亮）
+function isPicked(type, index, userId) {
+  const arr = configs[type].selected[index] || []
+  return arr.includes(userId + '')
 }
 
 async function loadAdminList() {
@@ -146,12 +187,18 @@ onMounted(() => {
 
 <style scoped>
 .process-config {
-  max-width: 760px;
-  margin: 20px;
-  padding: 20px;
-  border: 1px solid #eee;
-  border-radius: 8px;
+  max-width: 880px;
+  margin: 20px auto;
+  padding: 24px;
+  border: 1px solid #eef0f3;
+  border-radius: 12px;
   background: #fff;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.04);
+}
+.process-config > h2 {
+  margin: 0 0 4px;
+  font-size: 20px;
+  color: #1d2129;
 }
 .no-perm {
   margin-top: 20px;
@@ -162,63 +209,216 @@ onMounted(() => {
   color: #b94a48;
 }
 .hint {
-  color: #888;
+  color: #86909c;
   font-size: 13px;
   line-height: 1.7;
-  margin: 6px 0 18px;
+  margin: 6px 0 22px;
 }
+
+/* 每类申请的配置块 */
 .config-block {
-  border: 1px solid #eee;
-  border-radius: 6px;
-  padding: 14px 16px;
+  border: 1px solid #eef0f3;
+  border-radius: 10px;
+  padding: 18px 18px 16px;
+  margin-bottom: 22px;
+  background: #fafbfc;
+}
+.block-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
   margin-bottom: 16px;
 }
 .block-title {
-  font-weight: bold;
-  font-size: 15px;
-  margin-bottom: 12px;
-}
-.form-item {
-  margin: 12px 0;
+  font-weight: 700;
+  font-size: 16px;
+  color: #1d2129;
   display: flex;
   align-items: center;
+  gap: 8px;
 }
-.form-item.top { align-items: flex-start; }
-.form-item label {
-  width: 100px;
+.type-tag {
+  font-size: 12px;
   font-weight: 500;
-  flex-shrink: 0;
-}
-.form-item input {
-  padding: 6px 10px;
-  border: 1px solid #ccc;
+  color: #165DFF;
+  background: #e8f0ff;
   border-radius: 4px;
-  font-size: 14px;
-  width: 80px;
+  padding: 2px 8px;
 }
-.level-list { width: 100%; }
-.level-item {
-  margin: 8px 0;
+
+/* 级数步进控件 */
+.level-control {
   display: flex;
-  align-items: flex-start;
+  align-items: center;
+  gap: 6px;
 }
-.level-item span { width: 60px; padding-top: 6px; }
-.multi-select {
-  width: 360px;
-  height: 90px;
-  padding: 4px;
-  border: 1px solid #ccc;
-  border-radius: 4px;
+.level-label {
+  font-size: 13px;
+  color: #4e5969;
+  margin-right: 4px;
 }
-.btn-box { margin-top: 14px; }
+.step-btn {
+  width: 28px;
+  height: 28px;
+  border: 1px solid #d7dae0;
+  background: #fff;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 16px;
+  line-height: 1;
+  color: #4e5969;
+  transition: all .15s;
+}
+.step-btn:hover:not(:disabled) { border-color: #165DFF; color: #165DFF; }
+.step-btn:disabled { opacity: .4; cursor: not-allowed; }
+.level-control input {
+  width: 48px;
+  text-align: center;
+  padding: 5px 0;
+  border: 1px solid #d7dae0;
+  border-radius: 6px;
+  font-size: 14px;
+}
+
+/* 审核人卡片 */
+.level-cards {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.level-card {
+  background: #fff;
+  border: 1px solid #eef0f3;
+  border-radius: 10px;
+  padding: 14px 16px;
+}
+.level-card-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+.level-badge {
+  display: inline-block;
+  font-size: 13px;
+  font-weight: 600;
+  color: #fff;
+  background: linear-gradient(135deg, #165DFF, #4080ff);
+  border-radius: 6px;
+  padding: 4px 12px;
+}
+.picked-count {
+  font-size: 12px;
+  color: #86909c;
+}
+
+/* 管理员选择网格 */
+.admin-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 10px;
+}
+.admin-chip {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px;
+  border: 1px solid #e5e6eb;
+  border-radius: 8px;
+  cursor: pointer;
+  background: #fff;
+  transition: all .15s;
+  user-select: none;
+}
+.admin-chip:hover {
+  border-color: #9cbcff;
+  background: #f7faff;
+}
+.admin-chip.checked {
+  border-color: #165DFF;
+  background: #eef4ff;
+  box-shadow: 0 0 0 1px #165DFF inset;
+}
+/* 隐藏原生 checkbox，用整张卡片做点击区 */
+.admin-chip input {
+  position: absolute;
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+.avatar {
+  width: 34px;
+  height: 34px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  background: #e8f0ff;
+  color: #165DFF;
+  font-weight: 600;
+  font-size: 15px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.admin-chip.checked .avatar {
+  background: #165DFF;
+  color: #fff;
+}
+.chip-info {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  line-height: 1.3;
+}
+.chip-name {
+  font-size: 14px;
+  color: #1d2129;
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.chip-phone {
+  font-size: 12px;
+  color: #a9aeb8;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.tick {
+  margin-left: auto;
+  font-size: 13px;
+  font-weight: 700;
+  color: #165DFF;
+  opacity: 0;
+  transform: scale(.6);
+  transition: all .15s;
+}
+.admin-chip.checked .tick {
+  opacity: 1;
+  transform: scale(1);
+}
+.no-admin {
+  grid-column: 1 / -1;
+  text-align: center;
+  color: #c0c4cc;
+  font-size: 13px;
+  padding: 16px 0;
+}
+
+.btn-box { margin-top: 18px; }
 .btn {
-  padding: 8px 16px;
+  padding: 8px 18px;
   border: none;
-  border-radius: 4px;
+  border-radius: 6px;
   cursor: pointer;
   margin-right: 10px;
   font-size: 14px;
+  transition: opacity .15s;
 }
+.btn:hover { opacity: .9; }
 .save { background: #165DFF; color: #fff; }
-.reload { background: #6c757d; color: #fff; }
+.reload { background: #f2f3f5; color: #4e5969; }
 </style>

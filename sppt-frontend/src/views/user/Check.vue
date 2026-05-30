@@ -73,7 +73,6 @@ import { getAreaId } from '@/utils/auth'
 const areaId = getAreaId() || 0
 const list = ref([])
 const searchKey = ref('')
-const areaId = ref('')
 const houseType = ref('')
 const status = ref('')
 
