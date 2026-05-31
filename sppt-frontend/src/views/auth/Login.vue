@@ -92,7 +92,7 @@ async function doLogin() {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: linear-gradient(135deg, #1e3a8a 0%, #2563eb 50%, #3b82f6 100%);
+  background: linear-gradient(135deg, #0f3a73 0%, #1e5bb8 55%, #2c7be5 100%);
   padding: 20px;
 }
 .auth-box {

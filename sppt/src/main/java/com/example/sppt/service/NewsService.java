@@ -42,4 +42,7 @@ public interface NewsService extends IService<News> {
 
     // 新增公告/政策：自动补 createTime 后入库
     boolean saveNews(News news);
+
+    // 修改公告/政策：同样做禁用词校验
+    boolean updateNews(News news);
 }

@@ -17,4 +17,16 @@ public interface HouseService extends IService<HouseInfo> {
 
     // 按区域查询（门牌排查页用）
     List<HouseInfo> listByArea(Long areaId);
+
+    /**
+     * 生成街道内下一个可用的三位门牌号（1..999）。
+     * 规则：查询该街道(areaId, level=4)已有门牌中 "{areaId}-NNN" 的最大 NNN，+1 返回。
+     * @return 下一个门牌号（整数，如 1、2、...）；超过 999 抛异常。
+     */
+    int nextHouseNumber(Long streetAreaId);
+
+    /**
+     * 按门牌编号查询门牌（补发时用 original_house_code 定位原门牌）。
+     */
+    HouseInfo getByHouseCode(String houseCode);
 }

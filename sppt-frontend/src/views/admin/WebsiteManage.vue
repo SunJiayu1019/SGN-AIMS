@@ -1,5 +1,24 @@
 <template>
   <div class="website">
+    <!-- 禁用词管理：含有这些词的政策/公告将无法上传入库 -->
+    <div class="banned-box">
+      <div class="banned-head">
+        <strong>🚫 禁用词管理</strong>
+        <span>政策 / 公告的标题或正文若包含以下任一禁用词，提交时将被拦截、无法入库。</span>
+      </div>
+      <div class="banned-input">
+        <input v-model="newWord" placeholder="输入要禁用的词，回车或点添加" @keyup.enter="addBanned" />
+        <button class="btn add" @click="addBanned">添加禁用词</button>
+      </div>
+      <div class="banned-list">
+        <span v-for="w in bannedWords" :key="w.id" class="banned-tag">
+          {{ w.word }}
+          <i class="del" @click="removeBanned(w.id)">×</i>
+        </span>
+        <span v-if="bannedWords.length === 0" class="banned-empty">暂无禁用词</span>
+      </div>
+    </div>
+
     <!-- 政策 / 公告 切换 -->
     <div class="tabs">
       <button
@@ -127,6 +146,10 @@ const showForm = ref(false)
 const emptyForm = () => ({ id: null, title: '', content: '', areaId: '', publishInstitution: '' })
 const form = ref(emptyForm())
 
+// 禁用词管理
+const bannedWords = ref([])
+const newWord = ref('')
+
 // 后端已统一返回 Result<T>，此处统一拆包（兼容包装/未包装两种返回）
 function unwrap(res) { return res.data?.data !== undefined ? res.data.data : res.data }
 
@@ -212,11 +235,14 @@ async function submitForm() {
     if (form.value.id) {
       // 编辑 -> PUT /news（按 id 更新）
       payload.id = form.value.id
-      await axios.put(API + '/news', payload)
+      const res = await axios.put(API + '/news', payload)
+      if (res.data && res.data.code !== 200) { alert(res.data.msg || '保存失败'); return }
       alert('修改成功')
     } else {
       // 新增 -> POST /news（createTime 由后端自动补）
-      await axios.post(API + '/news', payload)
+      const res = await axios.post(API + '/news', payload)
+      // 禁用词命中时后端返回 code=500 + 提示，需拦截，不能当成功
+      if (res.data && res.data.code !== 200) { alert(res.data.msg || '上传失败'); return }
       alert('上传成功')
     }
     resetForm()
@@ -236,13 +262,60 @@ async function removeRow(id) {
   }
 }
 
+async function loadBanned() {
+  try {
+    const res = await axios.get(API + '/api/banned/list')
+    bannedWords.value = unwrap(res) || []
+  } catch (e) { console.error('加载禁用词失败：', e) }
+}
+async function addBanned() {
+  const w = (newWord.value || '').trim()
+  if (!w) { alert('请输入禁用词'); return }
+  try {
+    const res = await axios.post(API + '/api/banned/add', { word: w })
+    if (res.data && res.data.code !== 200) { alert(res.data.msg || '添加失败'); return }
+    newWord.value = ''
+    loadBanned()
+  } catch (e) { alert('添加失败：' + e.message) }
+}
+async function removeBanned(id) {
+  if (!confirm('确定删除该禁用词？')) return
+  try {
+    await axios.delete(API + '/api/banned/' + id)
+    loadBanned()
+  } catch (e) { alert('删除失败：' + e.message) }
+}
+
 onMounted(() => {
   loadAreas()
+  loadBanned()
   loadList()
 })
 </script>
 
 <style scoped>
+/* 禁用词管理 */
+.banned-box {
+  background: #fff; border: 1px solid var(--border-soft); border-left: 4px solid var(--danger);
+  border-radius: var(--radius); box-shadow: var(--shadow);
+  padding: 14px 16px; margin-bottom: 16px;
+}
+.banned-head { display: flex; flex-direction: column; gap: 3px; margin-bottom: 10px; }
+.banned-head strong { font-size: 15px; }
+.banned-head span { color: var(--text-sub); font-size: 13px; }
+.banned-input { display: flex; gap: 10px; margin-bottom: 10px; }
+.banned-input input { flex: 1; max-width: 320px; }
+.banned-input .btn.add { background: var(--brand); color: #fff; }
+.banned-list { display: flex; flex-wrap: wrap; gap: 8px; }
+.banned-tag {
+  display: inline-flex; align-items: center; gap: 6px;
+  background: #fef2f2; color: var(--danger); border: 1px solid #fecaca;
+  padding: 4px 10px; border-radius: 14px; font-size: 13px;
+}
+.banned-tag .del { cursor: pointer; font-style: normal; font-weight: 700; }
+.banned-tag .del:hover { color: #991b1b; }
+.banned-empty { color: var(--text-weak); font-size: 13px; }
+
 .tabs {
   display: flex;
   gap: 8px;
@@ -257,9 +330,9 @@ onMounted(() => {
   font-size: 14px;
 }
 .tab.active {
-  background: #165DFF;
+  background: var(--brand);
   color: #fff;
-  border-color: #165DFF;
+  border-color: var(--brand);
 }
 .toolbar {
   display: flex;
@@ -321,7 +394,7 @@ onMounted(() => {
 }
 .btn {
   padding: 6px 14px; border: none; border-radius: 4px;
-  cursor: pointer; background: #165DFF; color: #fff; font-size: 14px;
+  cursor: pointer; background: var(--brand); color: #fff; font-size: 14px;
 }
 .btn.plain { background: #6c757d; }
 .btn.add { background: #2ba471; }
@@ -341,7 +414,7 @@ onMounted(() => {
 .tb th { background: #f4f6f8; }
 .empty { text-align: center; color: #aaa; }
 .btn-edit {
-  background: #165DFF; color: #fff; border: none;
+  background: var(--brand); color: #fff; border: none;
   border-radius: 4px; padding: 4px 10px; cursor: pointer; margin-right: 6px;
 }
 .btn-del {

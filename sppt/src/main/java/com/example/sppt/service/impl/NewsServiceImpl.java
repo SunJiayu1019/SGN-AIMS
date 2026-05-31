@@ -22,6 +22,7 @@ public class NewsServiceImpl extends ServiceImpl<NewsMapper, News>
         implements NewsService {
 
     private final SysAreaService sysAreaService;
+    private final com.example.sppt.service.SysBannedWordService sysBannedWordService;
 
     /**
      * 兼容老的“城市编码”入参（taiyuan/lvliang/jinzhong/all）。
@@ -133,11 +134,25 @@ public class NewsServiceImpl extends ServiceImpl<NewsMapper, News>
 
     @Override
     public boolean saveNews(News news) {
+        // 禁用词校验：标题或正文命中禁用词则拒绝入库
+        String hit = sysBannedWordService.findHit(news.getTitle(), news.getContent());
+        if (hit != null) {
+            throw new IllegalArgumentException("内容包含禁用词「" + hit + "」，无法发布");
+        }
         if (news.getCreateTime() == null) {
             news.setCreateTime(LocalDateTime.now());
         }
         // publisherId / areaId 由前端表单提交，MyBatis-Plus 会按字段原样写入；
         // 这里不再对它们做任何覆盖，确保“发布人ID / 所属子站”都能正确入库。
         return save(news);
+    }
+
+    @Override
+    public boolean updateNews(News news) {
+        String hit = sysBannedWordService.findHit(news.getTitle(), news.getContent());
+        if (hit != null) {
+            throw new IllegalArgumentException("内容包含禁用词「" + hit + "」，无法保存");
+        }
+        return updateById(news);
     }
 }

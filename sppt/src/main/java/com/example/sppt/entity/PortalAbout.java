@@ -10,7 +10,7 @@ import lombok.Data;
 public class PortalAbout {
     @TableId(type = IdType.AUTO)
     private Long id;
-    private String areaId;
+    private Integer areaId;        // 区域ID（INT，0=总站）
     private String introduction;
     private String contactInfo;
 }

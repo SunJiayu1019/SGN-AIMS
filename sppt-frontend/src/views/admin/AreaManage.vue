@@ -159,7 +159,7 @@ onMounted(load)
 .toolbar input {
   padding: 6px 10px; border: 1px solid #ccc; border-radius: 4px; font-size: 14px; min-width: 280px;
 }
-.btn { padding: 6px 14px; border: none; border-radius: 4px; cursor: pointer; font-size: 14px; color: #fff; background: #165DFF; }
+.btn { padding: 6px 14px; border: none; border-radius: 4px; cursor: pointer; font-size: 14px; color: #fff; background: var(--brand); }
 .btn.plain { background: #6c757d; }
 .count { color: #888; margin-left: auto; font-size: 13px; }
 
@@ -179,7 +179,7 @@ onMounted(load)
 }
 .caret.leaf { cursor: default; color: #ccc; }
 .tag { padding: 1px 8px; border-radius: 10px; color: #fff; font-size: 12px; flex-shrink: 0; }
-.tag.lv1 { background: #165DFF; }
+.tag.lv1 { background: var(--brand); }
 .tag.lv2 { background: #2ba471; }
 .tag.lv3 { background: #e6a23c; }
 .tag.lv4 { background: #909399; }

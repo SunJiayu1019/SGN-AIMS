@@ -88,11 +88,13 @@ public class HousePdfServiceImpl implements HousePdfService {
             kv(info, "状态", statusText(house.getStatus()), fontLabel, fontText);
             doc.add(info);
 
-            // 二、相关申请记录
+            // 二、相关申请记录（通过 house_info.apply_no 关联 apply_form.apply_no）
             doc.add(section("二、相关门牌申请记录", fontH2));
-            List<ApplyForm> applies = applyFormService.list(new LambdaQueryWrapper<ApplyForm>()
-                    .eq(ApplyForm::getHouseId, houseId)
-                    .orderByDesc(ApplyForm::getCreateTime));
+            List<ApplyForm> applies = (house.getApplyNo() == null || house.getApplyNo().isEmpty())
+                    ? java.util.Collections.emptyList()
+                    : applyFormService.list(new LambdaQueryWrapper<ApplyForm>()
+                            .eq(ApplyForm::getApplyNo, house.getApplyNo())
+                            .orderByDesc(ApplyForm::getCreateTime));
 
             if (applies == null || applies.isEmpty()) {
                 Paragraph none = new Paragraph("（暂无与该门牌关联的申请记录）", fontText);

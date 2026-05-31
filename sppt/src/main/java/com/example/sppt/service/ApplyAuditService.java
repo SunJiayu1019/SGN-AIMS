@@ -26,4 +26,7 @@ public interface ApplyAuditService {
 
     // 审批某条申请：改状态 + 记录审批意见 +（通过时）门牌入库；失败抛异常以回滚
     void audit(AuditDTO dto);
+
+    // 查询某申请的审批进度（当前级别 / 总级别 / 各级记录），用于前端展示多级流转
+    java.util.Map<String, Object> progress(Long applyId);
 }

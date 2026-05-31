@@ -207,7 +207,7 @@ onMounted(() => {
 }
 .btn {
   padding: 6px 14px; border: none; border-radius: 4px;
-  cursor: pointer; background: #165DFF; color: #fff; font-size: 14px;
+  cursor: pointer; background: var(--brand); color: #fff; font-size: 14px;
 }
 .btn.plain { background: #6c757d; }
 .btn.add { background: #2ba471; }
@@ -227,7 +227,7 @@ onMounted(() => {
 .tb th { background: #f4f6f8; }
 .empty { text-align: center; color: #aaa; }
 .ops { display: flex; gap: 6px; flex-wrap: wrap; }
-.btn-edit { background: #165DFF; color: #fff; border: none; border-radius: 4px; padding: 4px 10px; cursor: pointer; }
+.btn-edit { background: var(--brand); color: #fff; border: none; border-radius: 4px; padding: 4px 10px; cursor: pointer; }
 .btn-pdf { background: #e6a23c; color: #fff; border: none; border-radius: 4px; padding: 4px 10px; cursor: pointer; }
 .btn-del { background: #d54941; color: #fff; border: none; border-radius: 4px; padding: 4px 10px; cursor: pointer; }
 </style>
