@@ -16,7 +16,7 @@
         <select v-model="areaId" class="select">
           <option value="1">山西省</option>
           <option value="2">太原市</option>
-          <option value="7">晋中市</option>
+          <option value="7">临汾市</option>
           <option value="8">吕梁市</option>
         </select>
 
@@ -68,40 +68,35 @@
 import { ref, onMounted, computed } from 'vue'
 import axios from 'axios'
 import Header from '@/components/Header.vue'
-import { getAreaId } from '@/utils/auth'
 
-const areaId = getAreaId() || 0
+// 只声明一次 areaId ✅
 const list = ref([])
 const searchKey = ref('')
-const areaId = ref('')
+const areaId = ref('') // 保留这个，用于下拉框绑定
 const houseType = ref('')
 const status = ref('')
 
-// 后端已统一返回 Result<T>，此处统一拆包（兼容包装/未包装两种返回）
+// 后端统一拆包
 const unwrap = (res) => (res.data?.data !== undefined ? res.data.data : res.data)
 
-const loadHouse = async () => {
+// 加载列表（函数名和 template 一致：loadList）✅
+const loadList = async () => {
   const res = await axios.get("http://localhost:8080/user/house/list", {
-    params: { areaId: areaId }
+    params: { areaId: areaId.value } // 用 .value ✅
   })
   list.value = unwrap(res) || []
 }
 
+// 过滤显示
 const showList = computed(() => {
   return list.value.filter(item => {
-    // 关键字匹配
     const matchKey =
         searchKey.value === '' ||
         (item.houseCode || '').includes(searchKey.value) ||
         (item.address || '').includes(searchKey.value)
 
-    // 地区匹配：山西省（id=1）不筛选，其他市才筛选
     const matchArea = areaId.value === '1' || item.areaId === parseInt(areaId.value)
-
-    // 类型匹配
     const matchType = houseType.value === '' || item.houseType === houseType.value
-
-    // 状态匹配
     const matchStatus = status.value === '' || item.status === parseInt(status.value)
 
     return matchKey && matchArea && matchType && matchStatus
@@ -115,6 +110,7 @@ const typeName = (t) => {
   return t
 }
 
+// 初始化：从 localStorage 取城市 → 赋值给 areaId
 onMounted(() => {
   const city = localStorage.getItem('currentCity') || 'all'
   const map = {

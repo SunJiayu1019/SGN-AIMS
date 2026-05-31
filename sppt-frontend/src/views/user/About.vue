@@ -30,7 +30,7 @@ const getAreaCode = () => {
   if (city === 'all') return '140000'
   if (city === 'taiyuan') return '140100'
   if (city === 'lvliang') return '141100'
-  if (city === 'jinzhong') return '140700'
+  if (city === 'linfen') return '140700'
   return '140000'
 }
 
