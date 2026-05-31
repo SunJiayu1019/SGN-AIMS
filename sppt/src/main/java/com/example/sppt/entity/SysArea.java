@@ -9,7 +9,7 @@ import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
 import lombok.Data;
-
+import com.baomidou.mybatisplus.annotation.TableField;
 @Data
 @TableName("sys_area")
 public class SysArea {
@@ -21,4 +21,7 @@ public class SysArea {
     private Long parentId;      // 上级ID
     private String parentPath;  // 父级路径
     private Integer sort;       // 排序
+    private String lng;
+    private String lat;
+    private String geometry;
 }

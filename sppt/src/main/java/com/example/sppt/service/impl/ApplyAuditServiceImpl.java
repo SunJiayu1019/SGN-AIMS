@@ -2,17 +2,8 @@ package com.example.sppt.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.example.sppt.dto.AuditDTO;
-import com.example.sppt.entity.ApplyApproval;
-import com.example.sppt.entity.ApplyForm;
-import com.example.sppt.entity.ApplyProcessNode;
-import com.example.sppt.entity.HouseInfo;
-import com.example.sppt.service.ApplyApprovalService;
-import com.example.sppt.service.ApplyAuditService;
-import com.example.sppt.service.ApplyFormService;
-import com.example.sppt.service.ApplyProcessConfigService;
-import com.example.sppt.service.HouseService;
-import com.example.sppt.service.SysLogService;
-import com.example.sppt.service.SysUserRoleService;
+import com.example.sppt.entity.*;
+import com.example.sppt.service.*;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -48,6 +39,7 @@ public class ApplyAuditServiceImpl implements ApplyAuditService {
     private final HouseService houseService;
     private final ApplyApprovalService applyApprovalService;
     private final SysLogService sysLogService;
+    private final SysAreaService sysAreaService;
 
     private static final List<String> APPLY_TYPES = Arrays.asList("new", "reissue");
 
@@ -328,13 +320,15 @@ public class ApplyAuditServiceImpl implements ApplyAuditService {
      *  新申请(new)：
      *    1. 在申请人所在街道(areaId, level=4)内生成下一个三位门牌号 NNN（001..999）；
      *    2. house_code = "{街道areaId}-{NNN}"，如 "10086-001"；
-     *    3. 新增 house_info（apply_no=申请号、house_code、area_id=街道id、status=1）；
-     *    4. 回写 apply_form.house_id = NNN（三位门牌号对应的整数）。
+     *    3. 根据 area_id 查询对应街道的地理坐标（lng/lat），自动注入 house_info；
+     *    4. 新增 house_info（apply_no=申请号、house_code、area_id=街道id、
+     *       lng/lat/geometry 由街道自动提供、status=1）；
+     *    5. 回写 apply_form.house_id = NNN（三位门牌号对应的整数）。
      *
      *  补发(reissue)：
      *    1. 以 apply_form.original_house_code 在 house_info.house_code 中定位原门牌；
      *    2. 复用原门牌号，不生成新号；将原 house_info.status 置为 1（有效/已补发）；
-     *    3. 不修改 house_code。
+     *    3. 不修改 house_code（门牌号保持原样）。
      */
     private void enterHouse(ApplyForm form) {
         boolean isReissue = "reissue".equalsIgnoreCase(form.getApplyType());
@@ -359,8 +353,16 @@ public class ApplyAuditServiceImpl implements ApplyAuditService {
         if (streetAreaId == null || streetAreaId <= 0) {
             throw new IllegalStateException("新申请缺少所属街道(area_id, level=4)");
         }
+
         int number = houseService.nextHouseNumber(streetAreaId);        // 1..999
         String houseCode = streetAreaId + "-" + String.format("%03d", number); // 如 "10086-001"
+
+        // ========== 新增：根据 area_id 自动查询街道坐标 ==========
+        SysArea streetArea = sysAreaService.getById(streetAreaId);
+        if (streetArea == null) {
+            throw new IllegalStateException("街道不存在：area_id=" + streetAreaId);
+        }
+        // =======================================================
 
         HouseInfo house = new HouseInfo();
         house.setApplyNo(form.getApplyNo());
@@ -371,6 +373,13 @@ public class ApplyAuditServiceImpl implements ApplyAuditService {
         house.setAddress(address);
         house.setHouseType(form.getHouseType());
         house.setAreaId(streetAreaId);
+
+        // ========== 新增：自动从街道坐标赋值 ==========
+        house.setLng(streetArea.getLng());
+        house.setLat(streetArea.getLat());
+        house.setGeometry(streetArea.getGeometry());  // 如果有 geometry 字段
+        // =============================================
+
         house.setCreateTime(LocalDateTime.now());
         house.setStatus(1);
         houseService.save(house);
