@@ -7,6 +7,7 @@ import com.example.sppt.dto.RegisterDTO;
 import com.example.sppt.entity.SysRole;
 import com.example.sppt.entity.SysUser;
 import com.example.sppt.service.AuthService;
+import com.example.sppt.service.SysLogService;
 import com.example.sppt.service.SysRoleService;
 import com.example.sppt.service.SysUserRoleService;
 import com.example.sppt.service.SysUserService;
@@ -29,6 +30,7 @@ public class AuthServiceImpl implements AuthService {
     private final SysUserService sysUserService;
     private final SysRoleService sysRoleService;
     private final SysUserRoleService sysUserRoleService;
+    private final SysLogService sysLogService;
 
     private static final String ROLE_USER = "user";
 
@@ -61,6 +63,10 @@ public class AuthServiceImpl implements AuthService {
         // 4. 绑定 user 角色（角色不存在则自动创建）
         SysRole userRole = sysRoleService.getOrCreateByName(ROLE_USER);
         sysUserRoleService.bindRole(user.getId(), userRole.getId());
+
+        // 5. 记录操作日志
+        sysLogService.record(user.getId(), user.getRealName(), "注册",
+                "sys_user", "新用户注册：" + user.getPhone());
     }
 
     @Override
@@ -87,6 +93,10 @@ public class AuthServiceImpl implements AuthService {
         vo.setRealName(user.getRealName());
         vo.setAreaId(user.getAreaId());
         vo.setRole(role);
+
+        // 记录登录日志
+        sysLogService.record(user.getId(), user.getRealName(), "登录",
+                "sys_user", "用户登录，角色：" + role);
         return vo;
     }
 

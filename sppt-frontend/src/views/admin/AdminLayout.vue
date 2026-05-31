@@ -1,41 +1,57 @@
 <template>
-  <div class="admin">
+  <el-container class="admin">
     <!-- 侧边栏 -->
-    <aside class="sidebar">
-      <div class="logo">标准地名地址<br />管理系统</div>
-      <nav class="menu">
-        <router-link
+    <el-aside width="220px" class="sidebar">
+      <div class="logo">
+        <el-icon class="logo-icon"><Location /></el-icon>
+        <div class="logo-text">标准地名地址<br />管理系统</div>
+      </div>
+      <el-menu
+        :default-active="route.path"
+        router
+        background-color="#1e293b"
+        text-color="#cbd5e1"
+        active-text-color="#ffffff"
+        class="menu"
+      >
+        <el-menu-item
           v-for="m in visibleMenus"
           :key="m.path"
-          :to="m.path"
-          class="menu-item"
+          :index="m.path"
         >
-          <span class="icon">{{ m.icon }}</span>
+          <el-icon><component :is="m.icon" /></el-icon>
           <span>{{ m.title }}</span>
-        </router-link>
-      </nav>
-    </aside>
+        </el-menu-item>
+      </el-menu>
+    </el-aside>
 
     <!-- 右侧主体 -->
-    <section class="main">
-      <header class="topbar">
+    <el-container>
+      <el-header class="topbar">
         <span class="page-title">{{ currentTitle }}</span>
-        <span class="admin-name">
-          {{ roleText }} {{ user?.realName || '' }}，您好
-          <button class="logout" @click="logout">退出登录</button>
-        </span>
-      </header>
-      <div class="content">
+        <div class="admin-name">
+          <el-tag :type="roleTagType" effect="light" round size="small">{{ roleText }}</el-tag>
+          <span class="hi">{{ user?.realName || '' }}，您好</span>
+          <el-button type="danger" size="small" :icon="SwitchButton" plain @click="logout">
+            退出登录
+          </el-button>
+        </div>
+      </el-header>
+      <el-main class="content">
         <router-view />
-      </div>
-    </section>
-  </div>
+      </el-main>
+    </el-container>
+  </el-container>
 </template>
 
 <script setup>
 import { computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { getUser, clearUser } from '@/utils/auth'
+import {
+  DataAnalysis, Document, House, MapLocation, Guide,
+  Setting, Key, Monitor, Notebook, Location, SwitchButton
+} from '@element-plus/icons-vue'
 
 const route = useRoute()
 const router = useRouter()
@@ -47,18 +63,19 @@ const roleText = computed(() => {
   if (r === 'normalAdmin') return '管理员'
   return '管理员'
 })
+const roleTagType = computed(() => (user.value?.role === 'coreAdmin' ? 'danger' : 'primary'))
 
-// 侧边栏菜单（coreOnly 的项仅核心管理员可见）
+// 侧边栏菜单（coreOnly 的项仅核心管理员可见），icon 改为 Element Plus 图标组件
 const menus = [
-  { title: '统计分析',     path: '/admin/statistics', icon: '📊' },
-  { title: '审批申请',     path: '/admin/audit',      icon: '📝' },
-  { title: '门牌管理',     path: '/admin/house',      icon: '🏠' },
-  { title: '行政区划管理', path: '/admin/area',       icon: '🗺️' },
-  { title: '街道查询',     path: '/admin/street',     icon: '🛣️' },
-  { title: '审批流程配置', path: '/admin/process',    icon: '⚙️', coreOnly: true },
-  { title: '角色权限管理', path: '/admin/role',       icon: '🔑' },
-  { title: '审批网站管理', path: '/admin/website',    icon: '🌐' },
-  { title: '系统日志',     path: '/admin/log',        icon: '🗒️' },
+  { title: '统计分析',     path: '/admin/statistics', icon: DataAnalysis },
+  { title: '审批申请',     path: '/admin/audit',      icon: Document },
+  { title: '门牌管理',     path: '/admin/house',      icon: House },
+  { title: '行政区划管理', path: '/admin/area',       icon: MapLocation },
+  { title: '街道查询',     path: '/admin/street',     icon: Guide },
+  { title: '审批流程配置', path: '/admin/process',    icon: Setting, coreOnly: true },
+  { title: '角色权限管理', path: '/admin/role',       icon: Key },
+  { title: '审批网站管理', path: '/admin/website',    icon: Monitor },
+  { title: '系统日志',     path: '/admin/log',        icon: Notebook },
 ]
 
 const visibleMenus = computed(() => {
@@ -75,94 +92,44 @@ function logout() {
 </script>
 
 <style scoped>
-.admin {
-  display: flex;
-  min-height: 100vh;
-}
+.admin { min-height: 100vh; }
 
 /* 侧边栏 */
 .sidebar {
-  width: 200px;
-  flex-shrink: 0;
-  background: #1f2d3d;
-  color: #fff;
+  background: #1e293b;
   display: flex;
   flex-direction: column;
+  box-shadow: 2px 0 8px rgba(0,0,0,.08);
 }
 .logo {
-  text-align: center;
-  font-size: 16px;
-  font-weight: bold;
-  line-height: 1.5;
-  padding: 18px 10px;
-  border-bottom: 1px solid #2c3e50;
-}
-.menu {
-  display: flex;
-  flex-direction: column;
-  padding-top: 8px;
-}
-.menu-item {
   display: flex;
   align-items: center;
   gap: 10px;
-  padding: 12px 20px;
-  color: #c8d0d8;
-  text-decoration: none;
-  font-size: 14px;
+  padding: 18px 16px;
+  border-bottom: 1px solid #334155;
 }
-.menu-item:hover {
-  background: #2c3e50;
-  color: #fff;
-}
-.menu-item.router-link-active {
-  background: #165DFF;
-  color: #fff;
-}
-.icon {
-  width: 18px;
-  text-align: center;
+.logo-icon { font-size: 26px; color: #60a5fa; }
+.logo-text { color: #fff; font-size: 15px; font-weight: 700; line-height: 1.4; }
+.menu { border-right: none; }
+.menu :deep(.el-menu-item.is-active) {
+  background: #2563eb !important;
 }
 
 /* 右侧主体 */
-.main {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  background: #f4f6f8;
-}
 .topbar {
-  height: 50px;
+  height: 56px;
   background: #fff;
-  border-bottom: 1px solid #e6e6e6;
+  border-bottom: 1px solid var(--border);
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0 20px;
+  padding: 0 22px;
 }
-.page-title {
-  font-size: 16px;
-  font-weight: bold;
-}
-.admin-name {
-  font-size: 13px;
-  color: #666;
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-.logout {
-  padding: 4px 10px;
-  background: #d54941;
-  color: #fff;
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
-  font-size: 12px;
-}
+.page-title { font-size: 17px; font-weight: 700; }
+.admin-name { display: flex; align-items: center; gap: 10px; font-size: 13px; color: var(--text-sub); }
+.hi { color: var(--text-main); }
 .content {
-  flex: 1;
-  padding: 16px;
-  overflow: auto;
+  background: var(--bg-page);
+  padding: 18px;
 }
 </style>

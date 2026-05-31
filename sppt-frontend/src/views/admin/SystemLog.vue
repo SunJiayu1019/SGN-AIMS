@@ -1,76 +1,153 @@
 <template>
   <div class="log">
-    <div class="banner">
-      <strong>系统日志（基础版）</strong>
-      <span>本页用于展示系统操作日志，详细记录每次数据修改。当前数据库尚无 sys_log 表与对应接口，下方为规划的表结构与展示样式。</span>
+    <!-- 筛选条 -->
+    <div class="app-card filter-bar">
+      <el-select v-model="query.action" placeholder="操作类型" clearable style="width: 150px"
+                 @change="reload">
+        <el-option label="全部类型" value="" />
+        <el-option v-for="a in actionTypes" :key="a" :label="a" :value="a" />
+      </el-select>
+      <el-input v-model="query.keyword" placeholder="搜索操作人 / 说明" clearable
+                style="width: 240px" :prefix-icon="Search" @keyup.enter="reload" @clear="reload" />
+      <el-button type="primary" :icon="Search" @click="reload">查询</el-button>
+      <el-button :icon="Refresh" @click="resetQuery">重置</el-button>
     </div>
 
-    <div class="card">
-      <div class="card-title">操作日志</div>
-      <table class="tb">
-        <thead>
-          <tr>
-            <th>ID</th><th>操作人</th><th>操作类型</th><th>操作对象</th><th>说明</th><th>时间</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr v-for="l in logs" :key="l.id">
-            <td>{{ l.id }}</td>
-            <td>{{ l.operator }}</td>
-            <td>{{ l.action }}</td>
-            <td>{{ l.target }}</td>
-            <td>{{ l.detail }}</td>
-            <td>{{ l.createTime }}</td>
-          </tr>
-          <tr v-if="logs.length === 0">
-            <td colspan="6" class="empty">暂无日志数据（sys_log 表与接口待补充）</td>
-          </tr>
-        </tbody>
-      </table>
-    </div>
+    <!-- 日志表格 -->
+    <div class="app-card">
+      <el-table :data="list" v-loading="loading" stripe border style="width: 100%">
+        <el-table-column prop="id" label="ID" width="70" align="center" />
+        <el-table-column prop="operator" label="操作人" width="120" />
+        <el-table-column label="操作类型" width="110" align="center">
+          <template #default="{ row }">
+            <el-tag :type="tagType(row.action)" effect="light" round>{{ row.action }}</el-tag>
+          </template>
+        </el-table-column>
+        <el-table-column prop="target" label="操作对象" width="140" />
+        <el-table-column prop="detail" label="变更说明" min-width="240" show-overflow-tooltip />
+        <el-table-column prop="ip" label="来源IP" width="130" align="center" />
+        <el-table-column prop="createTime" label="操作时间" width="180" align="center">
+          <template #default="{ row }">{{ fmt(row.createTime) }}</template>
+        </el-table-column>
+        <template #empty>
+          <el-empty description="暂无日志数据" :image-size="90" />
+        </template>
+      </el-table>
 
-    <div class="card">
-      <div class="card-title">建议的 sys_log 表结构</div>
-      <pre class="sql">CREATE TABLE sys_log (
-    id          INT PRIMARY KEY AUTO_INCREMENT,
-    operator    VARCHAR(30)  COMMENT '操作人',
-    action      VARCHAR(30)  COMMENT '操作类型 新增/修改/删除/审批',
-    target      VARCHAR(50)  COMMENT '操作对象 如 apply_form/house_info',
-    detail      VARCHAR(500) COMMENT '变更说明',
-    create_time DATETIME DEFAULT NOW()
-) COMMENT='系统操作日志';</pre>
-      <p class="tip">提示：日志可在各管理操作（审批、门牌增删改）成功后写入一条记录，再由本页查询展示。</p>
+      <div class="pager">
+        <el-pagination
+          background
+          layout="total, prev, pager, next, sizes"
+          :total="total"
+          :current-page="query.pageNum"
+          :page-size="query.pageSize"
+          :page-sizes="[10, 20, 50]"
+          @current-change="onPageChange"
+          @size-change="onSizeChange"
+        />
+      </div>
     </div>
   </div>
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { ref, reactive, onMounted } from 'vue'
+import axios from 'axios'
+import { Search, Refresh } from '@element-plus/icons-vue'
 
-// sys_log 表与接口尚未提供，暂用空列表占位
-const logs = ref([])
+const list = ref([])
+const total = ref(0)
+const loading = ref(false)
+
+const actionTypes = ['登录', '注册', '新增', '修改', '删除', '审批']
+
+const query = reactive({
+  pageNum: 1,
+  pageSize: 10,
+  action: '',
+  keyword: '',
+})
+
+function tagType(action) {
+  switch (action) {
+    case '新增': return 'success'
+    case '修改': return 'warning'
+    case '删除': return 'danger'
+    case '审批': return 'primary'
+    case '登录':
+    case '注册': return 'info'
+    default: return 'info'
+  }
+}
+
+function fmt(t) {
+  if (!t) return '—'
+  // 后端返回 ISO 或 "yyyy-MM-ddTHH:mm:ss"，统一替换 T 为空格
+  return String(t).replace('T', ' ').slice(0, 19)
+}
+
+function unwrap(res) {
+  return res.data?.data !== undefined ? res.data.data : res.data
+}
+
+async function loadLogs() {
+  loading.value = true
+  try {
+    const res = await axios.get('/api/log/page', {
+      params: {
+        pageNum: query.pageNum,
+        pageSize: query.pageSize,
+        action: query.action || '',
+        keyword: query.keyword || '',
+      },
+    })
+    const page = unwrap(res) || {}
+    list.value = page.records || []
+    total.value = page.total || 0
+  } catch (e) {
+    console.error('加载系统日志失败：', e)
+    list.value = []
+    total.value = 0
+  } finally {
+    loading.value = false
+  }
+}
+
+function reload() {
+  query.pageNum = 1
+  loadLogs()
+}
+function resetQuery() {
+  query.action = ''
+  query.keyword = ''
+  reload()
+}
+function onPageChange(p) {
+  query.pageNum = p
+  loadLogs()
+}
+function onSizeChange(s) {
+  query.pageSize = s
+  query.pageNum = 1
+  loadLogs()
+}
+
+onMounted(loadLogs)
 </script>
 
 <style scoped>
-.banner {
-  background: #f4f4f5; border: 1px solid #dcdcdc; border-radius: 8px;
-  padding: 12px 14px; margin-bottom: 14px;
-  display: flex; flex-direction: column; gap: 4px;
+.log { font-size: 14px; }
+.filter-bar {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  flex-wrap: wrap;
+  margin-bottom: 16px;
+  padding: 14px 16px;
 }
-.banner strong { font-size: 15px; }
-.banner span { color: #666; font-size: 13px; }
-.card {
-  background: #fff; border: 1px solid #eee; border-radius: 8px;
-  padding: 14px; margin-bottom: 14px;
+.pager {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 16px;
 }
-.card-title { font-weight: bold; margin-bottom: 10px; font-size: 14px; }
-.tb { width: 100%; border-collapse: collapse; font-size: 14px; }
-.tb th, .tb td { border: 1px solid #eee; padding: 8px 10px; text-align: left; }
-.tb th { background: #f4f6f8; }
-.empty { text-align: center; color: #aaa; }
-.sql {
-  background: #f7f7f7; border: 1px solid #eee; border-radius: 6px;
-  padding: 12px; font-size: 13px; overflow-x: auto; margin: 0;
-}
-.tip { color: #aaa; font-size: 12px; margin-top: 10px; }
 </style>

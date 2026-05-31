@@ -60,3 +60,81 @@ ALTER TABLE portal_news ADD COLUMN publisher_id INT COMMENT '发布人ID' AFTER 
 > 因此你已有的 mock 数据（house_info / apply_form / portal_news 用 area_id=1/2/3）仍然对得上。
 > 注意区分：`area_id=0` 表示“总站”，`area_id=100` 表示“山西省”节点。
 > 级联里选“全部（不限）”= 查全部（含总站）；选“山西省”= 查省及其下属全部。
+
+---
+
+# 第二轮修改说明（五项需求的定位与修复）
+
+## 需求 1：除审批网站主页外，所有页面都需登录后访问
+
+**定位**：`sppt-frontend/src/router/index.js` 中，`/user/policy`、`/user/notice`、
+`/user/about` 三个页面**没有** `meta.needLogin`，属于任何人可访问；全局守卫也只在
+未登录时简单跳 `/login`，登录后无法回到原页面。
+
+**修改**：
+- 给「主页」(`/` 与 `/user/home`) 之外的全部用户页加上 `meta: { needLogin: true }`。
+- 重写 `router.beforeEach`：未登录访问受限页时跳转 `'/login?redirect=<原路径>'`；
+  管理端未登录也带上 redirect。
+- `views/auth/Login.vue` 登录成功后优先读取 `route.query.redirect` 回跳，
+  否则按角色（管理员→`/admin`，普通用户→`/user/home`）跳转。
+
+## 需求 2：注册页区域改为「省/市/区县」分级选择
+
+**定位**：`views/auth/Register.vue` 原来用一个扁平 `<select>` 列出所有区域，
+没有分级。项目里其实已有可复用的级联组件 `components/AreaCascader.vue`。
+
+**修改**：重写 `Register.vue`，用 `<AreaCascader :include-all="false" emit-field="id" />`
+强制逐级选择（省→市→区县），并补充手机号格式校验、未选区域时拦截提交。
+同时改用 Element Plus 的 `el-form/el-input/el-button` 美化。
+
+## 需求 3：整站 CSS 美化，引入组件库
+
+**定位**：`element-plus` 在 `package.json` 里声明了却从未在 `main.js` 注册，
+全站都是手写原生样式，风格不统一。
+
+**修改**：
+- `main.js` 全局注册 Element Plus（中文语言包）+ 全量图标组件。
+- 新增 `src/styles/theme.css`：定义设计令牌（配色/圆角/阴影），
+  统一美化原生 `input/select/button/table`、滚动条，并对旧页面常用的
+  `.tb / .card / .panel / .toolbar` 类做兼容性视觉升级（无需逐页重写即可统一观感）。
+- 重写四个高频「外壳」页面：`Login.vue`、`Register.vue`、`components/Header.vue`
+  （渐变 banner + 图标导航）、`views/admin/AdminLayout.vue`（Element Plus 侧边菜单 + 图标）。
+- `views/admin/StreetQuery.vue` 改用 `el-table` 作为示范。
+- `package.json` 新增依赖：`@element-plus/icons-vue`、`echarts`、`vue-echarts`。
+
+## 需求 4：统计分析页用图表展示
+
+**定位**：`views/admin/Statistics.vue` 原来只用纯 CSS 条形 div 展示，较单调。
+
+**修改**：重写为基于 ECharts（`vue-echarts`）：
+- 申请状态分布 —— 环形饼图；
+- 门牌类别占比 —— 饼图；
+- 各区域门牌数量 —— 横向柱状图；
+- 顶部 7 个概览指标改为带强调色与图标的卡片。
+接口沿用原 `/api/stats/*`，无需改后端。
+
+## 需求 5：系统日志功能（建表 + 初始数据 + 前后端）
+
+**定位**：`views/admin/SystemLog.vue` 原来只是占位说明页，没有 `sys_log` 表与接口。
+
+**修改（数据库）**：新增 `sql/sys_log.sql`：
+- `CREATE TABLE IF NOT EXISTS sys_log(...)`（含 operator_id/operator/action/target/detail/ip/create_time）；
+- 注册 `log:view` 菜单权限；
+- 注入 10 条演示日志。
+
+**修改（后端）**：新增
+- `entity/SysLog.java`、`mapper/SysLogMapper.java`；
+- `service/SysLogService.java` + `service/impl/SysLogServiceImpl.java`
+  （`record(...)` 通用写日志方法，异常不外抛；`page(...)` 支持按类型+关键字分页）；
+- `controller/SysLogController.java`：`GET /api/log/page`（分页查询）、`POST /api/log/record`（主动写入）；
+- 在 `AuthServiceImpl` 的登录/注册成功后自动写入一条日志，保证日志页有真实数据来源。
+
+**修改（前端）**：重写 `SystemLog.vue` 为真实功能页：
+Element Plus 表格 + 操作类型筛选 + 关键字搜索 + 分页，操作类型用彩色 `el-tag` 区分。
+
+## 备注（请知悉）
+- 因本地构建环境无外网，未能 `npm install` 实跑构建；请在你本地执行
+  `cd sppt-frontend && npm install && npm run dev`（会拉取新增的 echarts 等依赖）。
+- 后端请重新 `mvnw clean package` 后启动，并先在 MySQL 执行 `sql/sys_log.sql`。
+- 既存遗留问题：`views/user/Home.vue`、`Policy.vue`、`Notice.vue` 点击跳转
+  `/news/detail/:id`，但该路由未在 `router/index.js` 注册，会 404（本轮未涉及，未改动）。

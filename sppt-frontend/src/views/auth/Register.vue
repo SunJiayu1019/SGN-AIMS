@@ -1,36 +1,46 @@
 <template>
   <div class="auth-page">
     <div class="auth-box">
+      <div class="brand">
+        <el-icon class="brand-icon"><Location /></el-icon>
+        <div class="brand-title">标准地名地址管理系统</div>
+      </div>
       <h2>用户注册</h2>
       <p class="sub">注册后默认为普通用户</p>
 
-      <div class="field">
-        <label>手机号</label>
-        <input v-model="form.phone" placeholder="请输入手机号" />
-      </div>
-      <div class="field">
-        <label>密码</label>
-        <input v-model="form.password" type="password" placeholder="请输入密码" />
-      </div>
-      <div class="field">
-        <label>确认密码</label>
-        <input v-model="confirmPassword" type="password" placeholder="请再次输入密码" />
-      </div>
-      <div class="field">
-        <label>真实姓名</label>
-        <input v-model="form.realName" placeholder="请输入真实姓名" />
-      </div>
-      <div class="field">
-        <label>所在区域</label>
-        <select v-model="form.areaId">
-          <option :value="0">总站（全省）</option>
-          <option v-for="a in areaList" :key="a.id" :value="a.id">{{ a.name }}</option>
-        </select>
-      </div>
+      <el-form :model="form" label-position="top" @submit.prevent>
+        <el-form-item label="手机号">
+          <el-input v-model="form.phone" placeholder="请输入手机号" :prefix-icon="Iphone" clearable />
+        </el-form-item>
 
-      <button class="btn primary" @click="doRegister" :disabled="loading">
+        <el-form-item label="密码">
+          <el-input v-model="form.password" type="password" placeholder="请输入密码"
+                    :prefix-icon="Lock" show-password />
+        </el-form-item>
+
+        <el-form-item label="确认密码">
+          <el-input v-model="confirmPassword" type="password" placeholder="请再次输入密码"
+                    :prefix-icon="Lock" show-password />
+        </el-form-item>
+
+        <el-form-item label="真实姓名">
+          <el-input v-model="form.realName" placeholder="请输入真实姓名" :prefix-icon="User" clearable />
+        </el-form-item>
+
+        <el-form-item label="所在区域（省 / 市 / 区县 分级选择）">
+          <!-- 复用级联组件：include-all=false 表示必须逐级选择到具体区域 -->
+          <AreaCascader
+            v-model="form.areaId"
+            :include-all="false"
+            emit-field="id"
+            @change="onAreaChange"
+          />
+        </el-form-item>
+      </el-form>
+
+      <el-button type="primary" class="btn-block" :loading="loading" @click="doRegister">
         {{ loading ? '注册中...' : '注册' }}
-      </button>
+      </el-button>
 
       <div class="tip-row">
         <span>已有账号？</span>
@@ -41,15 +51,18 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref } from 'vue'
 import axios from 'axios'
 import { useRouter } from 'vue-router'
+import { ElMessage } from 'element-plus'
+import { Iphone, Lock, User, Location } from '@element-plus/icons-vue'
+import AreaCascader from '@/components/AreaCascader.vue'
 
 const router = useRouter()
-const areaList = ref([])
 const confirmPassword = ref('')
 const loading = ref(false)
 
+// areaId 默认 0（总站）；选择级联后会被覆盖为具体区域 id
 const form = ref({
   phone: '',
   password: '',
@@ -57,27 +70,20 @@ const form = ref({
   areaId: 0
 })
 
-function unwrap(res) { return res.data?.data !== undefined ? res.data.data : res.data }
-
-async function loadAreas() {
-  try {
-    const res = await axios.get('/api/sys/area/list')
-    areaList.value = unwrap(res) || []
-  } catch (e) {
-    console.error('加载区域失败：', e)
-  }
+function onAreaChange(val) {
+  // 级联组件未选时回传空字符串，这里兜底为 0（总站）
+  form.value.areaId = (val === '' || val === null || val === undefined) ? 0 : Number(val)
 }
 
 async function doRegister() {
-  // 基本校验
-  if (!form.value.phone) { alert('请输入手机号'); return }
-  if (!form.value.password) { alert('请输入密码'); return }
-  // 前端先核实两次密码是否一致
+  if (!form.value.phone) { ElMessage.warning('请输入手机号'); return }
+  if (!/^1\d{10}$/.test(form.value.phone)) { ElMessage.warning('手机号格式不正确'); return }
+  if (!form.value.password) { ElMessage.warning('请输入密码'); return }
   if (form.value.password !== confirmPassword.value) {
-    alert('两次输入的密码不一致')
-    return
+    ElMessage.warning('两次输入的密码不一致'); return
   }
-  if (!form.value.realName) { alert('请输入真实姓名'); return }
+  if (!form.value.realName) { ElMessage.warning('请输入真实姓名'); return }
+  if (!form.value.areaId) { ElMessage.warning('请逐级选择所在区域'); return }
 
   loading.value = true
   try {
@@ -88,21 +94,18 @@ async function doRegister() {
       areaId: Number(form.value.areaId)
     }
     const res = await axios.post('/api/auth/register', payload)
-    // 后端会检测手机号是否已注册：失败 code=500 + msg（如"该手机号已被注册"）
     if (res.data && res.data.code !== 200) {
-      alert(res.data.msg || '注册失败')
+      ElMessage.error(res.data.msg || '注册失败')
       return
     }
-    alert('注册成功，请登录')
+    ElMessage.success('注册成功，请登录')
     router.push('/login')
   } catch (e) {
-    alert('注册失败：' + e.message)
+    ElMessage.error('注册失败：' + e.message)
   } finally {
     loading.value = false
   }
 }
-
-onMounted(loadAreas)
 </script>
 
 <style scoped>
@@ -111,60 +114,43 @@ onMounted(loadAreas)
   display: flex;
   align-items: center;
   justify-content: center;
-  background: #f4f6f8;
+  background: linear-gradient(135deg, #1e3a8a 0%, #2563eb 50%, #3b82f6 100%);
+  padding: 20px;
 }
 .auth-box {
-  width: 380px;
+  width: 420px;
   background: #fff;
-  border: 1px solid #eee;
-  border-radius: 8px;
-  padding: 28px 26px;
-  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.05);
+  border-radius: 16px;
+  padding: 34px 32px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.25);
 }
+.brand {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin-bottom: 14px;
+}
+.brand-icon { font-size: 26px; color: var(--brand); }
+.brand-title { font-size: 16px; font-weight: 700; color: var(--brand); }
 .auth-box h2 {
   text-align: center;
   margin: 0 0 4px;
-  font-size: 20px;
+  font-size: 22px;
 }
 .sub {
   text-align: center;
-  color: #999;
+  color: var(--text-weak);
   font-size: 12px;
-  margin: 0 0 18px;
+  margin: 0 0 20px;
 }
-.field { margin-bottom: 13px; }
-.field label {
-  display: block;
-  font-size: 13px;
-  color: #555;
-  margin-bottom: 6px;
-}
-.field input,
-.field select {
-  width: 100%;
-  box-sizing: border-box;
-  padding: 9px 10px;
-  border: 1px solid #ccc;
-  border-radius: 4px;
-  font-size: 14px;
-}
-.btn {
-  width: 100%;
-  padding: 10px;
-  border: none;
-  border-radius: 4px;
-  font-size: 15px;
-  cursor: pointer;
-  margin-top: 6px;
-}
-.btn.primary { background: #2ba471; color: #fff; }
-.btn:disabled { opacity: 0.7; cursor: not-allowed; }
+.btn-block { width: 100%; margin-top: 6px; }
 .tip-row {
-  margin-top: 16px;
+  margin-top: 18px;
   text-align: center;
   font-size: 13px;
-  color: #666;
+  color: var(--text-sub);
 }
-.link { color: #165DFF; text-decoration: none; margin-left: 4px; }
+.link { color: var(--brand); text-decoration: none; margin-left: 4px; }
 .link:hover { text-decoration: underline; }
 </style>
