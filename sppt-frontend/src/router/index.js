@@ -39,14 +39,15 @@ const routes = [
   { path: '/register', component: Register },
 
   // ============ 用户端 /user/xxx ============
-  { path: '/',             component: Home },
-  { path: '/user/home',    component: Home },
-  { path: '/user/policy',  component: Policy },
-  { path: '/user/notice',  component: Notice },
+  // 需求：除「审批网站主页」外，其余页面一律需要登录后才能访问。
+  { path: '/',             component: Home },                                  // 审批网站主页（唯一免登录）
+  { path: '/user/home',    component: Home },                                  // 主页别名（同样免登录）
+  { path: '/user/policy',  component: Policy,    meta: { needLogin: true } },  // 管理政策
+  { path: '/user/notice',  component: Notice,    meta: { needLogin: true } },  // 通知公告
   { path: '/user/apply',   component: Apply,     meta: { needLogin: true } },  // 我的申请
   { path: '/user/reissue', component: Reissue,   meta: { needLogin: true } },  // 补发
   { path: '/user/check',   component: Check,     meta: { needLogin: true } },  // 门牌排查
-  { path: '/user/about',   component: About },
+  { path: '/user/about',   component: About,     meta: { needLogin: true } },  // 关于我们
   { path: '/user/submit',  component: ApplySubmit, meta: { needLogin: true } },// 提交申请
 
   // ============ 管理端 /admin/xxx（带侧边栏的后台首页）============
@@ -74,22 +75,25 @@ const router = createRouter({
   routes,
 })
 
-// 全局路由守卫：后台需管理员；部分用户功能需登录
+// 全局路由守卫：
+//   - 后台 /admin/** 必须是管理员（核心 / 普通）
+//   - 用户端除「审批网站主页」外，全部页面需登录
+//   - 未登录被拦截时带上 redirect，登录后可回跳原页面
 router.beforeEach((to) => {
   const user = getUser()
 
   // 后台：必须是管理员（核心 / 普通）
   if (to.matched.some(r => r.meta?.needAdmin)) {
-    if (!user) return '/login'
+    if (!user) return { path: '/login', query: { redirect: to.fullPath } }
     if (user.role !== 'coreAdmin' && user.role !== 'normalAdmin') {
       return '/user/home'
     }
     return true
   }
 
-  // 用户端需要登录的功能（提交申请 / 补发 / 排查 / 我的申请）
+  // 用户端需要登录的页面（主页之外的所有页面）
   if (to.meta?.needLogin && !user) {
-    return '/login'
+    return { path: '/login', query: { redirect: to.fullPath } }
   }
 
   return true

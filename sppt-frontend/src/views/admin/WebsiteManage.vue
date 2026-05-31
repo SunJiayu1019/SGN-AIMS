@@ -3,14 +3,14 @@
     <!-- 政策 / 公告 切换 -->
     <div class="tabs">
       <button
-        class="tab"
-        :class="{ active: activeType === 'policy' }"
-        @click="switchType('policy')"
+          class="tab"
+          :class="{ active: activeType === 'policy' }"
+          @click="switchType('policy')"
       >政策管理</button>
       <button
-        class="tab"
-        :class="{ active: activeType === 'notice' }"
-        @click="switchType('notice')"
+          class="tab"
+          :class="{ active: activeType === 'notice' }"
+          @click="switchType('notice')"
       >公告管理</button>
     </div>
 
@@ -47,8 +47,8 @@
       </div>
 
       <div class="form-row">
-        <label>发布人ID</label>
-        <input v-model="form.publisherId" placeholder="发布人用户ID（可选）" />
+        <label>发布机构</label>
+        <input v-model="form.publishInstitution" placeholder="请输入发布机构名称（如：太原市民政局）" />
       </div>
 
       <div class="form-row top">
@@ -70,32 +70,34 @@
     <!-- 列表：当前类型的政策 / 公告 -->
     <table class="tb">
       <thead>
-        <tr>
-          <th>ID</th>
-          <th>标题</th>
-          <th>所属子站</th>
-          <th>发布人ID</th>
-          <th>发布时间</th>
-          <th>操作</th>
-        </tr>
+      <tr>
+        <th>ID</th>
+        <th>标题</th>
+        <th>所属子站</th>
+        <th>发布机构</th>
+        <th>发布人ID</th>
+        <th>发布时间</th>
+        <th>操作</th>
+      </tr>
       </thead>
       <tbody>
-        <tr v-for="n in list" :key="n.id">
-          <td>{{ n.id }}</td>
-          <td>{{ n.title }}</td>
-          <td>{{ areaName(n.areaId) }}</td>
-          <td>{{ n.publisherId == null ? '-' : n.publisherId }}</td>
-          <td>{{ n.createTime }}</td>
-          <td>
-            <button class="btn-edit" @click="editRow(n)">编辑</button>
-            <button class="btn-del" @click="removeRow(n.id)">删除</button>
-          </td>
-        </tr>
-        <tr v-if="list.length === 0">
-          <td colspan="6" class="empty">
-            暂无{{ activeType === 'policy' ? '政策' : '公告' }}数据
-          </td>
-        </tr>
+      <tr v-for="n in list" :key="n.id">
+        <td>{{ n.id }}</td>
+        <td>{{ n.title }}</td>
+        <td>{{ areaName(n.areaId) }}</td>
+        <td>{{ n.publishInstitution || '-' }}</td>
+        <td>{{ n.publishId == null ? '-' : n.publishId }}</td>
+        <td>{{ n.createTime }}</td>
+        <td>
+          <button class="btn-edit" @click="editRow(n)">编辑</button>
+          <button class="btn-del" @click="removeRow(n.id)">删除</button>
+        </td>
+      </tr>
+      <tr v-if="list.length === 0">
+        <td colspan="7" class="empty">
+          暂无{{ activeType === 'policy' ? '政策' : '公告' }}数据
+        </td>
+      </tr>
       </tbody>
     </table>
   </div>
@@ -105,6 +107,7 @@
 import { ref, onMounted } from 'vue'
 import axios from 'axios'
 import AreaCascader from '@/components/AreaCascader.vue'
+import { getUserId } from '@/utils/auth'
 
 // /news 接口未走 Vite 代理（只代理了 /api），统一用后端绝对地址
 const API = 'http://localhost:8080'
@@ -116,11 +119,12 @@ const areaMap = ref({})
 const filterAreaId = ref('')       // '' 表示全部子站（级联组件的“全部”哨兵值）
 const showForm = ref(false)
 
-// 表单字段对应 portal_news 表：title / content / type / areaId / publisherId
-// （id 仅编辑时携带；createTime 新增时由后端自动生成）
+// 表单字段对应 portal_news 表：title / content / type / areaId / publishInstitution
+// （publishId 不在表单里填写，提交时自动取「当前登录用户」的 id；
+//   id 仅编辑时携带；createTime 新增时由后端自动生成）
 // areaId 用 '' 表示「总站/全省」，与级联组件的“全部”哨兵值保持一致；
 // 提交后端时再把 '' 转成 0（数据库约定 area_id=0 即总站）。
-const emptyForm = () => ({ id: null, title: '', content: '', areaId: '', publisherId: '' })
+const emptyForm = () => ({ id: null, title: '', content: '', areaId: '', publishInstitution: '' })
 const form = ref(emptyForm())
 
 // 后端已统一返回 Result<T>，此处统一拆包（兼容包装/未包装两种返回）
@@ -180,7 +184,7 @@ function editRow(row) {
     content: row.content,
     // 数据库里 0 / null 都视为总站 -> 用 '' 让级联组件回显为“全部（不限）”
     areaId: (row.areaId == null || row.areaId === 0) ? '' : row.areaId,
-    publisherId: row.publisherId == null ? '' : row.publisherId
+    publishInstitution: row.publishInstitution || ''
   }
   showForm.value = true
 }
@@ -193,15 +197,15 @@ async function submitForm() {
   }
   // 组装提交对象：
   //   areaId 为 ''（总站/全省）-> 转成 0；选了具体市/区县 -> 用该区域真实 id
-  //   publisherId 为空则不传（保持 null）
+  //   publishInstitution：发布机构（字符串）原样提交
+  //   publishId：取当前登录用户的 id（int），作为“发布人ID”入库
   const payload = {
     title: form.value.title,
     content: form.value.content,
     type: activeType.value,
-    areaId: form.value.areaId === '' ? 0 : Number(form.value.areaId)
-  }
-  if (form.value.publisherId !== '' && form.value.publisherId != null) {
-    payload.publisherId = Number(form.value.publisherId)
+    areaId: form.value.areaId === '' ? 0 : Number(form.value.areaId),
+    publishInstitution: form.value.publishInstitution || '',
+    publishId: getUserId() == null ? null : Number(getUserId())
   }
 
   try {

@@ -2,91 +2,62 @@
   <div class="stats">
     <!-- 概览数字卡片 -->
     <div class="cards">
-      <div class="card">
-        <div class="num">{{ overview.applyTotal }}</div>
-        <div class="label">申请总数</div>
-      </div>
-      <div class="card pending">
-        <div class="num">{{ overview.applyPending }}</div>
-        <div class="label">待审批</div>
-      </div>
-      <div class="card approved">
-        <div class="num">{{ overview.applyApproved }}</div>
-        <div class="label">已通过</div>
-      </div>
-      <div class="card rejected">
-        <div class="num">{{ overview.applyRejected }}</div>
-        <div class="label">已驳回</div>
-      </div>
-      <div class="card">
-        <div class="num">{{ overview.houseTotal }}</div>
-        <div class="label">门牌总数</div>
-      </div>
-      <div class="card">
-        <div class="num">{{ overview.areaTotal }}</div>
-        <div class="label">行政区划数</div>
-      </div>
-      <div class="card">
-        <div class="num">{{ overview.userTotal }}</div>
-        <div class="label">用户数</div>
-      </div>
-    </div>
-
-    <div class="panels">
-      <!-- 门牌类别统计 -->
-      <div class="panel">
-        <h3>门牌类别统计</h3>
-        <div v-if="houseByType.length === 0" class="empty">暂无数据</div>
-        <div v-for="row in houseByType" :key="row.type" class="bar-row">
-          <span class="bar-name">{{ row.typeName }}</span>
-          <div class="bar-track">
-            <div
-              class="bar-fill type"
-              :style="{ width: percent(row.count, houseTypeMax) + '%' }"
-            ></div>
-          </div>
-          <span class="bar-val">{{ row.count }}</span>
-        </div>
-      </div>
-
-      <!-- 门牌区域统计 -->
-      <div class="panel">
-        <h3>门牌区域统计</h3>
-        <div v-if="houseByArea.length === 0" class="empty">暂无数据</div>
-        <div v-for="row in houseByArea" :key="row.areaId" class="bar-row">
-          <span class="bar-name">{{ row.areaName }}</span>
-          <div class="bar-track">
-            <div
-              class="bar-fill area"
-              :style="{ width: percent(row.count, houseAreaMax) + '%' }"
-            ></div>
-          </div>
-          <span class="bar-val">{{ row.count }}</span>
-        </div>
-      </div>
-
-      <!-- 申请状态统计 -->
-      <div class="panel">
-        <h3>申请状态统计</h3>
-        <div v-if="applyByStatus.length === 0" class="empty">暂无数据</div>
-        <div v-for="row in applyByStatus" :key="row.status" class="bar-row">
-          <span class="bar-name">{{ row.statusName }}</span>
-          <div class="bar-track">
-            <div
-              class="bar-fill status"
-              :style="{ width: percent(row.count, applyStatusMax) + '%' }"
-            ></div>
-          </div>
-          <span class="bar-val">{{ row.count }}</span>
+      <div class="stat-card" v-for="c in cardList" :key="c.key" :style="{ '--accent': c.color }">
+        <el-icon class="stat-icon"><component :is="c.icon" /></el-icon>
+        <div class="stat-body">
+          <div class="num">{{ overview[c.key] ?? 0 }}</div>
+          <div class="label">{{ c.label }}</div>
         </div>
       </div>
     </div>
+
+    <!-- 图表区 -->
+    <el-row :gutter="16" class="charts">
+      <el-col :xs="24" :md="12">
+        <div class="app-card chart-card">
+          <div class="chart-title">申请状态分布</div>
+          <v-chart v-if="applyByStatus.length" class="chart" :option="applyStatusOption" autoresize />
+          <el-empty v-else description="暂无数据" :image-size="80" />
+        </div>
+      </el-col>
+
+      <el-col :xs="24" :md="12">
+        <div class="app-card chart-card">
+          <div class="chart-title">门牌类别占比</div>
+          <v-chart v-if="houseByType.length" class="chart" :option="houseTypeOption" autoresize />
+          <el-empty v-else description="暂无数据" :image-size="80" />
+        </div>
+      </el-col>
+
+      <el-col :xs="24">
+        <div class="app-card chart-card">
+          <div class="chart-title">各区域门牌数量</div>
+          <v-chart v-if="houseByArea.length" class="chart chart-tall" :option="houseAreaOption" autoresize />
+          <el-empty v-else description="暂无数据" :image-size="80" />
+        </div>
+      </el-col>
+    </el-row>
   </div>
 </template>
 
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import axios from 'axios'
+import VChart from 'vue-echarts'
+import { use } from 'echarts/core'
+import { CanvasRenderer } from 'echarts/renderers'
+import { PieChart, BarChart } from 'echarts/charts'
+import {
+  TitleComponent, TooltipComponent, LegendComponent, GridComponent
+} from 'echarts/components'
+import {
+  Document, Clock, CircleCheck, CircleClose, House, MapLocation, UserFilled
+} from '@element-plus/icons-vue'
+
+use([
+  CanvasRenderer, PieChart, BarChart,
+  TitleComponent, TooltipComponent, LegendComponent, GridComponent
+])
 
 const overview = ref({
   applyTotal: 0, applyPending: 0, applyApproved: 0, applyRejected: 0,
@@ -96,19 +67,69 @@ const houseByType = ref([])
 const houseByArea = ref([])
 const applyByStatus = ref([])
 
-// 取每组里的最大值，用于计算条形图百分比（至少为1，避免除0）
-const houseTypeMax = computed(() =>
-  Math.max(1, ...houseByType.value.map(r => r.count)))
-const houseAreaMax = computed(() =>
-  Math.max(1, ...houseByArea.value.map(r => r.count)))
-const applyStatusMax = computed(() =>
-  Math.max(1, ...applyByStatus.value.map(r => r.count)))
+const cardList = [
+  { key: 'applyTotal',    label: '申请总数',   color: '#2563eb', icon: Document },
+  { key: 'applyPending',  label: '待审批',     color: '#d97706', icon: Clock },
+  { key: 'applyApproved', label: '已通过',     color: '#16a34a', icon: CircleCheck },
+  { key: 'applyRejected', label: '已驳回',     color: '#dc2626', icon: CircleClose },
+  { key: 'houseTotal',    label: '门牌总数',   color: '#0891b2', icon: House },
+  { key: 'areaTotal',     label: '行政区划数', color: '#7c3aed', icon: MapLocation },
+  { key: 'userTotal',     label: '用户数',     color: '#0d9488', icon: UserFilled },
+]
 
-function percent(v, max) {
-  return Math.round((v / max) * 100)
-}
+// 申请状态：环形饼图
+const applyStatusOption = computed(() => ({
+  tooltip: { trigger: 'item', formatter: '{b}: {c} ({d}%)' },
+  legend: { bottom: 0 },
+  color: ['#d97706', '#16a34a', '#dc2626', '#94a3b8'],
+  series: [{
+    name: '申请状态',
+    type: 'pie',
+    radius: ['45%', '70%'],
+    avoidLabelOverlap: true,
+    itemStyle: { borderRadius: 6, borderColor: '#fff', borderWidth: 2 },
+    label: { formatter: '{b}\n{c}' },
+    data: applyByStatus.value.map(r => ({ name: r.statusName, value: r.count })),
+  }],
+}))
 
-// 兼容 Result 包装({code,msg,data}) 或直接返回数组
+// 门牌类别：饼图
+const houseTypeOption = computed(() => ({
+  tooltip: { trigger: 'item', formatter: '{b}: {c} ({d}%)' },
+  legend: { bottom: 0 },
+  color: ['#2563eb', '#16a34a', '#d97706', '#7c3aed', '#0891b2'],
+  series: [{
+    name: '门牌类别',
+    type: 'pie',
+    radius: '65%',
+    itemStyle: { borderRadius: 4, borderColor: '#fff', borderWidth: 2 },
+    label: { formatter: '{b}\n{d}%' },
+    data: houseByType.value.map(r => ({ name: r.typeName, value: r.count })),
+  }],
+}))
+
+// 各区域门牌：横向柱状图
+const houseAreaOption = computed(() => {
+  const names = houseByArea.value.map(r => r.areaName)
+  const vals = houseByArea.value.map(r => r.count)
+  return {
+    tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' } },
+    grid: { left: 100, right: 30, top: 16, bottom: 24 },
+    xAxis: { type: 'value', minInterval: 1 },
+    yAxis: { type: 'category', data: names },
+    series: [{
+      type: 'bar',
+      data: vals,
+      barMaxWidth: 26,
+      itemStyle: {
+        borderRadius: [0, 6, 6, 0],
+        color: '#2563eb',
+      },
+      label: { show: true, position: 'right' },
+    }],
+  }
+})
+
 function unwrap(res) {
   return res.data?.data !== undefined ? res.data.data : res.data
 }
@@ -138,64 +159,38 @@ onMounted(loadAll)
 
 /* 数字卡片 */
 .cards {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 12px;
-  margin-bottom: 16px;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 14px;
+  margin-bottom: 18px;
 }
-.card {
-  flex: 1;
-  min-width: 120px;
+.stat-card {
   background: #fff;
-  border: 1px solid #eee;
-  border-radius: 8px;
-  padding: 16px;
-  text-align: center;
-}
-.card .num { font-size: 26px; font-weight: bold; color: #1f2d3d; }
-.card .label { margin-top: 6px; color: #888; }
-.card.pending .num { color: #e6a23c; }
-.card.approved .num { color: #2ba471; }
-.card.rejected .num { color: #d54941; }
-
-/* 统计面板 */
-.panels {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 16px;
-}
-.panel {
-  flex: 1;
-  min-width: 280px;
-  background: #fff;
-  border: 1px solid #eee;
-  border-radius: 8px;
-  padding: 16px;
-}
-.panel h3 { margin: 0 0 14px; font-size: 15px; }
-.empty { color: #aaa; padding: 10px 0; }
-
-.bar-row {
+  border: 1px solid var(--border-soft);
+  border-left: 4px solid var(--accent);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: 16px 18px;
   display: flex;
   align-items: center;
-  margin: 10px 0;
+  gap: 14px;
+  transition: transform .15s, box-shadow .15s;
 }
-.bar-name { width: 92px; color: #555; }
-.bar-track {
-  flex: 1;
-  height: 16px;
-  background: #f0f2f5;
-  border-radius: 8px;
-  overflow: hidden;
+.stat-card:hover { transform: translateY(-2px); box-shadow: var(--shadow-hover); }
+.stat-icon {
+  font-size: 28px;
+  color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 12%, #fff);
+  border-radius: 10px;
+  padding: 8px;
 }
-.bar-fill {
-  height: 100%;
-  border-radius: 8px;
-  min-width: 2px;
-  transition: width .3s;
-}
-.bar-fill.type { background: #165DFF; }
-.bar-fill.area { background: #2ba471; }
-.bar-fill.status { background: #e6a23c; }
-.bar-val { width: 40px; text-align: right; color: #333; }
+.num { font-size: 26px; font-weight: 700; color: var(--text-main); line-height: 1.1; }
+.label { margin-top: 4px; color: var(--text-sub); font-size: 13px; }
+
+/* 图表 */
+.charts { margin: 0; }
+.chart-card { margin-bottom: 16px; }
+.chart-title { font-size: 15px; font-weight: 600; margin-bottom: 10px; }
+.chart { height: 300px; width: 100%; }
+.chart-tall { height: 360px; }
 </style>

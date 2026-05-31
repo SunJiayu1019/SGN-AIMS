@@ -1,0 +1,184 @@
+/* =========================================================================
+   全局主题样式（site-wide design tokens）
+   作用：为整站提供统一的配色、圆角、阴影与基础控件美化。
+   设计目标：不改动各页面业务逻辑，仅通过全局样式让原生
+            input / select / button / table / 卡片 等观感统一升级。
+   引入位置：src/main.js -> import './styles/theme.css'
+   ========================================================================= */
+
+:root {
+  /* 主色与语义色 */
+  --brand:        #2563eb;   /* 主品牌蓝 */
+  --brand-dark:   #1d4ed8;
+  --brand-light:  #eff4ff;
+  --success:      #16a34a;
+  --warning:      #d97706;
+  --danger:       #dc2626;
+  --info:         #64748b;
+
+  /* 文本 */
+  --text-main:    #1e293b;
+  --text-sub:     #64748b;
+  --text-weak:    #94a3b8;
+
+  /* 背景与线条 */
+  --bg-page:      #f1f5f9;
+  --bg-card:      #ffffff;
+  --border:       #e2e8f0;
+  --border-soft:  #eef2f7;
+
+  /* 圆角与阴影 */
+  --radius:       10px;
+  --radius-sm:    6px;
+  --shadow:       0 4px 16px rgba(15, 23, 42, 0.06);
+  --shadow-hover: 0 8px 24px rgba(15, 23, 42, 0.10);
+}
+
+/* ------------------------- 基础排版 ------------------------- */
+* { box-sizing: border-box; }
+
+html, body, #app {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+}
+
+body {
+  font-family: "PingFang SC", "Microsoft YaHei", -apple-system,
+               "Helvetica Neue", Arial, sans-serif;
+  color: var(--text-main);
+  background: var(--bg-page);
+  font-size: 14px;
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+}
+
+h1, h2, h3, h4 { color: var(--text-main); }
+
+/* ------------------- 原生表单控件统一美化 ------------------- */
+/* 仅作用于普通页面里的原生控件；Element Plus 控件有自己的样式不受影响 */
+input:not([type="checkbox"]):not([type="radio"]):not(.el-input__inner),
+select:not(.el-input__inner),
+textarea:not(.el-textarea__inner) {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 9px 12px;
+  font-size: 14px;
+  color: var(--text-main);
+  background: #fff;
+  transition: border-color .2s, box-shadow .2s;
+  outline: none;
+}
+
+input:not(.el-input__inner):focus,
+select:not(.el-input__inner):focus,
+textarea:not(.el-textarea__inner):focus {
+  border-color: var(--brand);
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
+}
+
+/* ------------------------- 通用按钮 ------------------------- */
+/* 不影响 Element Plus 的 .el-button */
+button:not(.el-button) {
+  cursor: pointer;
+  border: none;
+  border-radius: var(--radius-sm);
+  padding: 8px 16px;
+  font-size: 14px;
+  transition: transform .05s, filter .2s, box-shadow .2s;
+}
+button:not(.el-button):hover { filter: brightness(0.95); }
+button:not(.el-button):active { transform: translateY(1px); }
+button:not(.el-button):disabled { opacity: .6; cursor: not-allowed; }
+
+/* ------------------------- 通用表格 ------------------------- */
+table:not(.el-table__body):not(.el-table__header) {
+  border-collapse: collapse;
+  width: 100%;
+}
+table:not(.el-table__body):not(.el-table__header) th {
+  background: #f8fafc;
+  color: var(--text-sub);
+  font-weight: 600;
+}
+
+/* ------------------- 自定义滚动条（细腻一些） ------------------- */
+::-webkit-scrollbar { width: 8px; height: 8px; }
+::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+::-webkit-scrollbar-track { background: transparent; }
+
+/* ------------------- 可复用的卡片/工具类 ------------------- */
+.app-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border-soft);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: 18px;
+}
+.app-card:hover { box-shadow: var(--shadow-hover); }
+
+.app-page-title {
+  font-size: 18px;
+  font-weight: 600;
+  margin: 0 0 16px;
+}
+
+/* Element Plus 主色对齐品牌色 */
+:root {
+  --el-color-primary: #2563eb;
+}
+
+/* -----------------------------------------------------------------------
+   兼容性美化：旧页面普遍使用的 .tb 表格、.toolbar、.card、.container 等
+   类名，这里统一做轻量升级，使未单独重写的管理页也能获得一致观感。
+   （这些是全局类，不受 scoped 限制；仅做视觉增强，不改结构）
+   ----------------------------------------------------------------------- */
+
+/* 旧版手写表格 .tb */
+.tb {
+  width: 100%;
+  border-collapse: separate !important;
+  border-spacing: 0;
+  background: var(--bg-card);
+  border: 1px solid var(--border) !important;
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+.tb th {
+  background: #f8fafc !important;
+  color: var(--text-sub) !important;
+  font-weight: 600;
+  padding: 11px 12px !important;
+  border: none !important;
+  border-bottom: 1px solid var(--border) !important;
+  text-align: left;
+}
+.tb td {
+  padding: 11px 12px !important;
+  border: none !important;
+  border-bottom: 1px solid var(--border-soft) !important;
+}
+.tb tbody tr:hover td { background: var(--brand-light); }
+.tb tbody tr:last-child td { border-bottom: none !important; }
+
+/* 旧版工具条 / 卡片 / 容器：补足圆角与阴影 */
+.toolbar, .card, .container, .part, .panel, .banner {
+  border-radius: var(--radius) !important;
+}
+.card, .panel {
+  box-shadow: var(--shadow);
+  border-color: var(--border-soft) !important;
+}
+
+/* 旧页面顶部 h2 标题，统一字号与间距 */
+.container > h2,
+.street > h2,
+.stats > h2 {
+  font-size: 18px;
+  font-weight: 600;
+  margin: 0 0 16px;
+}

@@ -1,25 +1,30 @@
 <template>
   <div class="auth-page">
     <div class="auth-box">
+      <div class="brand">
+        <el-icon class="brand-icon"><Location /></el-icon>
+        <div class="brand-title">标准地名地址管理系统</div>
+      </div>
       <h2>系统登录</h2>
+      <p class="sub">请输入账号信息登录</p>
 
-      <div class="field">
-        <label>手机号</label>
-        <input v-model="phone" placeholder="请输入手机号" />
-      </div>
-      <div class="field">
-        <label>密码</label>
-        <input v-model="password" type="password" placeholder="请输入密码" @keyup.enter="doLogin" />
-      </div>
+      <el-form :model="{ phone, password }" label-position="top" @submit.prevent>
+        <el-form-item label="手机号">
+          <el-input v-model="phone" placeholder="请输入手机号" :prefix-icon="Iphone" clearable />
+        </el-form-item>
+        <el-form-item label="密码">
+          <el-input v-model="password" type="password" placeholder="请输入密码"
+                    :prefix-icon="Lock" show-password @keyup.enter="doLogin" />
+        </el-form-item>
+      </el-form>
 
-      <button class="btn primary" @click="doLogin" :disabled="loading">
-        {{ loading ? '登录中...' : '登录' }}
-      </button>
+      <el-button type="primary" class="btn-block" :loading="loading" @click="doLogin">
+        {{ loading ? '登录中...' : '登 录' }}
+      </el-button>
 
-      <!-- 暂无账号 -> 注册 -->
       <div class="tip-row">
         <span>还没有账号？</span>
-        <router-link class="link" to="/register">暂无账号，去注册</router-link>
+        <router-link class="link" to="/register">去注册</router-link>
       </div>
     </div>
   </div>
@@ -28,10 +33,13 @@
 <script setup>
 import { ref } from 'vue'
 import axios from 'axios'
-import { useRouter } from 'vue-router'
+import { useRouter, useRoute } from 'vue-router'
+import { ElMessage } from 'element-plus'
+import { Iphone, Lock, Location } from '@element-plus/icons-vue'
 import { setUser } from '@/utils/auth'
 
 const router = useRouter()
+const route = useRoute()
 const phone = ref('')
 const password = ref('')
 const loading = ref(false)
@@ -40,7 +48,7 @@ function unwrap(res) { return res.data?.data !== undefined ? res.data.data : res
 
 async function doLogin() {
   if (!phone.value || !password.value) {
-    alert('请输入手机号和密码')
+    ElMessage.warning('请输入手机号和密码')
     return
   }
   loading.value = true
@@ -49,26 +57,29 @@ async function doLogin() {
       phone: phone.value,
       password: password.value
     })
-    // 后端约定：成功 code=200 并返回 LoginVO；失败 code=500 + msg
     if (res.data && res.data.code !== 200) {
-      alert(res.data.msg || '登录失败')
+      ElMessage.error(res.data.msg || '登录失败')
       return
     }
     const user = unwrap(res)
     if (!user) {
-      alert('登录失败')
+      ElMessage.error('登录失败')
       return
     }
     setUser(user)
+    ElMessage.success('登录成功')
 
-    // 按角色跳转
-    if (user.role === 'coreAdmin' || user.role === 'normalAdmin') {
+    // 若来源页带了 redirect，则优先回跳；否则按角色跳转
+    const redirect = route.query.redirect
+    if (redirect && typeof redirect === 'string') {
+      router.push(redirect)
+    } else if (user.role === 'coreAdmin' || user.role === 'normalAdmin') {
       router.push('/admin')
     } else {
       router.push('/user/home')
     }
   } catch (e) {
-    alert('登录失败：' + e.message)
+    ElMessage.error('登录失败：' + e.message)
   } finally {
     loading.value = false
   }
@@ -81,53 +92,43 @@ async function doLogin() {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: #f4f6f8;
+  background: linear-gradient(135deg, #1e3a8a 0%, #2563eb 50%, #3b82f6 100%);
+  padding: 20px;
 }
 .auth-box {
-  width: 360px;
+  width: 400px;
   background: #fff;
-  border: 1px solid #eee;
-  border-radius: 8px;
-  padding: 28px 26px;
-  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.05);
+  border-radius: 16px;
+  padding: 36px 32px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.25);
 }
+.brand {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin-bottom: 14px;
+}
+.brand-icon { font-size: 26px; color: var(--brand); }
+.brand-title { font-size: 16px; font-weight: 700; color: var(--brand); }
 .auth-box h2 {
   text-align: center;
-  margin: 0 0 20px;
-  font-size: 20px;
+  margin: 0 0 4px;
+  font-size: 22px;
 }
-.field { margin-bottom: 14px; }
-.field label {
-  display: block;
-  font-size: 13px;
-  color: #555;
-  margin-bottom: 6px;
+.sub {
+  text-align: center;
+  color: var(--text-weak);
+  font-size: 12px;
+  margin: 0 0 22px;
 }
-.field input {
-  width: 100%;
-  box-sizing: border-box;
-  padding: 9px 10px;
-  border: 1px solid #ccc;
-  border-radius: 4px;
-  font-size: 14px;
-}
-.btn {
-  width: 100%;
-  padding: 10px;
-  border: none;
-  border-radius: 4px;
-  font-size: 15px;
-  cursor: pointer;
-  margin-top: 6px;
-}
-.btn.primary { background: #165DFF; color: #fff; }
-.btn:disabled { opacity: 0.7; cursor: not-allowed; }
+.btn-block { width: 100%; margin-top: 6px; }
 .tip-row {
-  margin-top: 16px;
+  margin-top: 18px;
   text-align: center;
   font-size: 13px;
-  color: #666;
+  color: var(--text-sub);
 }
-.link { color: #165DFF; text-decoration: none; margin-left: 4px; }
+.link { color: var(--brand); text-decoration: none; margin-left: 4px; }
 .link:hover { text-decoration: underline; }
 </style>

@@ -1,37 +1,31 @@
 <template>
   <div class="street">
-    <div class="toolbar">
-      <input v-model="keyword" placeholder="输入街道名称查询" />
-      <span class="count">共 {{ filtered.length }} 条街道</span>
+    <div class="app-card toolbar">
+      <el-input v-model="keyword" placeholder="输入街道名称查询" clearable
+                :prefix-icon="Search" style="width: 260px" />
+      <el-tag type="info" effect="plain" round>共 {{ filtered.length }} 条街道</el-tag>
     </div>
 
-    <table class="tb">
-      <thead>
-        <tr>
-          <th>ID</th><th>街道名称</th><th>编码</th><th>上级区/县ID</th><th>所属路径</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr v-for="s in filtered" :key="s.id">
-          <td>{{ s.id }}</td>
-          <td>{{ s.name }}</td>
-          <td>{{ s.code }}</td>
-          <td>{{ s.parentId }}</td>
-          <td>{{ s.parentPath }}</td>
-        </tr>
-        <tr v-if="filtered.length === 0">
-          <td colspan="5" class="empty">暂无街道数据（街道为行政区划中 level=4 的记录）</td>
-        </tr>
-      </tbody>
-    </table>
-
-    <p class="tip">提示：街道数据取自行政区划表中 level=4 的记录。街道专题图导出可在此基础上扩展。</p>
+    <div class="app-card">
+      <el-table :data="filtered" stripe border style="width: 100%">
+        <el-table-column prop="id" label="ID" width="80" align="center" />
+        <el-table-column prop="name" label="街道名称" min-width="160" />
+        <el-table-column prop="code" label="编码" width="160" />
+        <el-table-column prop="parentId" label="上级区/县ID" width="130" align="center" />
+        <el-table-column prop="parentPath" label="所属路径" min-width="200" show-overflow-tooltip />
+        <template #empty>
+          <el-empty description="暂无街道数据（街道为行政区划中 level=4 的记录）" :image-size="90" />
+        </template>
+      </el-table>
+      <p class="tip">提示：街道数据取自行政区划表中 level=4 的记录。街道专题图导出可在此基础上扩展。</p>
+    </div>
   </div>
 </template>
 
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import axios from 'axios'
+import { Search } from '@element-plus/icons-vue'
 
 const streetList = ref([])
 const keyword = ref('')
@@ -55,20 +49,9 @@ onMounted(load)
 
 <style scoped>
 .toolbar {
-  display: flex; gap: 10px; align-items: center;
-  background: #fff; border: 1px solid #eee; border-radius: 8px;
-  padding: 12px; margin-bottom: 12px;
+  display: flex; gap: 12px; align-items: center;
+  margin-bottom: 16px; padding: 14px 16px;
 }
-.toolbar input {
-  padding: 6px 10px; border: 1px solid #ccc; border-radius: 4px; font-size: 14px; min-width: 220px;
-}
-.count { color: #888; margin-left: auto; font-size: 13px; }
-.tb {
-  width: 100%; border-collapse: collapse; background: #fff;
-  border-radius: 8px; overflow: hidden; font-size: 14px;
-}
-.tb th, .tb td { border: 1px solid #eee; padding: 8px 10px; text-align: left; }
-.tb th { background: #f4f6f8; }
-.empty { text-align: center; color: #aaa; }
-.tip { color: #aaa; font-size: 12px; margin-top: 12px; }
+.toolbar .el-tag { margin-left: auto; }
+.tip { color: var(--text-weak); font-size: 12px; margin: 12px 0 0; }
 </style>
