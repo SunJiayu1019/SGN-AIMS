@@ -52,4 +52,10 @@ public class ApplyAdminController {
             return Result.fail(e.getMessage());
         }
     }
+
+    // 审批进度：当前级别 / 总级别 / 各级审批记录
+    @GetMapping("/admin/progress")
+    public Result<java.util.Map<String, Object>> progress(@RequestParam Long applyId) {
+        return Result.success(applyAuditService.progress(applyId));
+    }
 }

@@ -25,6 +25,15 @@ public class ApplyUserController {
     // 提交申请
     @PostMapping("/submit")
     public Result<String> submit(@RequestBody ApplyForm form) {
+        // apply_no 唯一非空：若前端未带，则服务端生成 AP + 时间戳
+        if (form.getApplyNo() == null || form.getApplyNo().trim().isEmpty()) {
+            form.setApplyNo("AP" + System.currentTimeMillis());
+        }
+        // 新申请不应带原门牌号；补发必须带
+        if ("new".equalsIgnoreCase(form.getApplyType())) {
+            form.setOriginalHouseCode(null);
+        }
+        form.setHouseId(null);
         form.setCreateTime(LocalDateTime.now());
         form.setStatus("PENDING");
         applyFormService.save(form);

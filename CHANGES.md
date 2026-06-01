@@ -138,3 +138,76 @@ Element Plus 表格 + 操作类型筛选 + 关键字搜索 + 分页，操作类�
 - 后端请重新 `mvnw clean package` 后启动，并先在 MySQL 执行 `sql/sys_log.sql`。
 - 既存遗留问题：`views/user/Home.vue`、`Policy.vue`、`Notice.vue` 点击跳转
   `/news/detail/:id`，但该路由未在 `router/index.js` 注册，会 404（本轮未涉及，未改动）。
+
+---
+
+# 第三轮修改说明（五项需求）
+
+## 需求 1｜多级审批是否正确？apply_approval 是否被正确使用？
+
+**诊断（错在哪）**：apply_approval 表**有**被写入，但「多级审批」实为假多级。
+`ApplyAuditServiceImpl.audit()` 在第一个审批人点「通过」时就把 apply_form 状态直接置为
+最终的 APPROVED/REJECTED，**完全没读取 apply_process_node 的级数配置**。后果：
+- 每个申请的 apply_approval 永远只有 1 条记录；
+- 该记录的 node_level 取的是「操作人被配置的级别」，并非真实流转级别；
+- 配置的 new=3 级流程从未生效，第 2、3 级审批人根本没机会处理。
+
+**修复（怎么改）**：重写 `ApplyAuditServiceImpl`，实现真正逐级流转：
+- 「当前级别」由 apply_approval 中已 APPROVE 的最高级别 +1 推导（不改表结构）；
+- 每级按 audit_type 判定：ONE=任一通过即进级，ALL=该级名单全部通过才进级；
+- 任意一级 REJECT -> 申请直接 REJECTED；
+- 仅当最后一级通过 -> APPROVED 并门牌入库；
+- 每次审批都写一条 apply_approval，node_level 真实落级；
+- 加了权限/重复校验：普通管理员只能审「轮到自己负责的级别」，不能重复投票；核心管理员可代任意级别。
+- 新增 `GET /apply/admin/progress` 返回审批进度，前端 `ApplyAudit.vue` 用 el-steps 步骤条 + 历史标签展示。
+- 演示配置见 `sql/approval_flow_demo.sql`（new 配 3 级、reissue 配 1 级）。
+
+## 需求 2｜能否集成 GIS？哪些功能适合？怎么集成？专题地图能实现吗？
+
+**结论**：能。house_info 表已自带 lng/lat/geometry/area_id 字段，天然适合做点位地图。
+**适合 GIS 的功能**：门牌点位分布、按行政区划的专题图（着色/计数）、门牌排查的空间检索、
+申请落点定位。**集成方案（已落地）**：前端用开源 **Leaflet + OpenStreetMap**（无需 Key）。
+- 后端新增 `GisController`：`/api/gis/house-points`（按 areaId 过滤、解析经纬度返回点位）、
+  `/api/gis/area-summary`（各区域门牌数量，供专题图图例/着色）；
+- 前端新增 `views/admin/GisMap.vue`：Leaflet 地图按区域筛选打点（住宅/商铺/厂房不同颜色），
+  右侧表格显示各区域门牌数量，即「按行政区划的专题地图」；
+- 侧边栏新增「门牌专题地图」菜单，路由 `/admin/gis`；
+- 依赖：`package.json` 新增 `leaflet`；演示坐标见 `sql/gis_house_mock.sql`。
+进一步可扩展：行政区划面状边界（GeoJSON）分级设色、热力图、与高德/天地图底图切换。
+
+## 需求 3｜用户「修改密码」「编辑个人信息」
+
+- 后端 `SysUserService` 增 `changePassword`（校验原密码、新密码≥6位）与
+  `updateProfile`（改姓名/手机号/区域，手机号唯一校验）；
+  `SysUserController` 增 `/api/user/profile`、`/api/user/change-password`、`/api/user/update-profile`
+  （改资料后回传最新登录态供前端刷新）。
+- 前端新增 `views/user/Profile.vue`（Element Plus 选项卡：编辑资料 / 修改密码），
+  路由 `/user/profile`，Header 增「个人中心」入口。
+
+## 需求 4｜「审批网站管理」增加禁用字段功能，含禁用词内容无法入库
+
+- 后端新增 `SysBannedWord` 的 mapper/service/controller（`/api/banned/list|add|{id}`）；
+  `SysBannedWordServiceImpl.findHit()` 对标题+正文逐词匹配；
+- 在 `NewsServiceImpl.saveNews()` 与新增的 `updateNews()` 中前置校验，命中即抛异常拒绝入库；
+  `NewsController` 的新增/修改接口捕获异常返回 fail，前端 `WebsiteManage.submitForm` 改为
+  检查返回 code 并弹出「内容包含禁用词…」提示（原来不检查 code，会把失败当成功）；
+- `WebsiteManage.vue` 顶部新增「禁用词管理」面板（增/删/列表）；
+- 演示词见 `sql/sys_banned_word.sql`。
+
+## 需求 5｜「管理系统」帮助信息功能，位于侧边栏底端，渲染数据库表字段
+
+- 后端新增 `SysHelp` 的 mapper/service/controller（`/api/help/list`、`/api/help/{id}`），
+  按 sort 升序返回；
+- 前端新增 `views/admin/HelpInfo.vue`（el-collapse 渲染 sys_help 的 title/content），
+  路由 `/admin/help`；`AdminLayout.vue` 把「帮助信息」固定在侧边栏**底部**（flex 布局推到底）；
+- 数据见 `sql/sys_help.sql`。
+
+## 本轮新增 SQL（执行顺序建议）
+1. `sql/sys_help.sql`、`sql/sys_banned_word.sql`、`sql/sys_log.sql`（建表+演示数据，可重复执行）
+2. `sql/gis_house_mock.sql`（GIS 点位演示，依赖 area_seed.sql 的区县 id）
+3. `sql/approval_flow_demo.sql`（多级审批演示配置，依赖 upgrade_process_node.sql 与 auth_seed.sql）
+
+## 运行提示
+- 前端：`cd sppt-frontend && npm install && npm run dev`（本轮新增 leaflet 依赖）。
+- 后端：先执行上述 SQL，再 `mvnw clean package` 启动。
+- 因本地无外网，未能实跑构建；已对全部前后端文件做结构性校验（标签/括号/包名/引用均通过）。

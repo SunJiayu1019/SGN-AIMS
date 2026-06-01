@@ -7,31 +7,32 @@
    ========================================================================= */
 
 :root {
-  /* 主色与语义色 */
-  --brand:        #2563eb;   /* 主品牌蓝 */
-  --brand-dark:   #1d4ed8;
-  --brand-light:  #eff4ff;
-  --success:      #16a34a;
-  --warning:      #d97706;
-  --danger:       #dc2626;
-  --info:         #64748b;
+  /* 主色与语义色（端庄正式的浅蓝主色调） */
+  --brand:        #1e5bb8;   /* 主品牌蓝（沉稳） */
+  --brand-dark:   #0f3a73;
+  --brand-light:  #eef4fc;   /* 浅蓝背景 */
+  --brand-soft:   #dbe7f7;   /* 略深的浅蓝（边框/分隔） */
+  --success:      #1f9254;
+  --warning:      #c77700;
+  --danger:       #d23b3b;
+  --info:         #5a6b82;
 
   /* 文本 */
-  --text-main:    #1e293b;
-  --text-sub:     #64748b;
-  --text-weak:    #94a3b8;
+  --text-main:    #1f2d3d;
+  --text-sub:     #5a6b82;
+  --text-weak:    #93a1b5;
 
   /* 背景与线条 */
-  --bg-page:      #f1f5f9;
+  --bg-page:      #eef2f8;   /* 整站浅蓝灰底，干净 */
   --bg-card:      #ffffff;
-  --border:       #e2e8f0;
-  --border-soft:  #eef2f7;
+  --border:       #dbe4f0;
+  --border-soft:  #eaf0f8;
 
   /* 圆角与阴影 */
-  --radius:       10px;
-  --radius-sm:    6px;
-  --shadow:       0 4px 16px rgba(15, 23, 42, 0.06);
-  --shadow-hover: 0 8px 24px rgba(15, 23, 42, 0.10);
+  --radius:       12px;
+  --radius-sm:    8px;
+  --shadow:       0 4px 18px rgba(15, 58, 115, 0.06);
+  --shadow-hover: 0 10px 28px rgba(15, 58, 115, 0.12);
 }
 
 /* ------------------------- 基础排版 ------------------------- */
@@ -129,7 +130,7 @@ table:not(.el-table__body):not(.el-table__header) th {
 
 /* Element Plus 主色对齐品牌色 */
 :root {
-  --el-color-primary: #2563eb;
+  --el-color-primary: #1e5bb8;
 }
 
 /* -----------------------------------------------------------------------
@@ -181,4 +182,96 @@ table:not(.el-table__body):not(.el-table__header) th {
   font-size: 18px;
   font-weight: 600;
   margin: 0 0 16px;
+}
+
+/* =========================================================================
+   审批网站（用户端）全局观感统一升级
+   说明：用户端各页普遍使用 .page/.content/.section/.item 等通用类，且大多
+        未用 Element Plus 容器。这里统一为它们补齐卡片、间距、留白与层级，
+        让所有页面无需逐一改写即可获得端庄、整洁、一致的浅蓝风格。
+   ========================================================================= */
+
+/* 内容区统一留白 */
+.page > .content {
+  padding: 24px 20px;
+}
+
+/* 把用户端的内容块（section/列表容器）卡片化 */
+.page .content > .section,
+.page .content > ul,
+.page .content > .list,
+.page .content > .news-list {
+  background: var(--bg-card);
+  border: 1px solid var(--border-soft);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: 18px 22px;
+}
+
+/* 内容区标题统一 */
+.page .content h2,
+.page .content > .section h3 {
+  font-size: 17px;
+  font-weight: 700;
+  color: var(--text-main);
+  margin: 0 0 14px;
+  padding-bottom: 10px;
+  border-bottom: 2px solid var(--brand-light);
+}
+
+/* 列表项：统一悬停高亮与分隔，弱化生硬的虚线 */
+.page .content .item {
+  padding: 12px 8px;
+  border-bottom: 1px solid var(--border-soft);
+  border-radius: var(--radius-sm);
+  transition: background .18s, color .18s, padding-left .18s;
+}
+.page .content .item:last-child { border-bottom: none; }
+.page .content .item:hover {
+  color: var(--brand);
+  background: var(--brand-light);
+  padding-left: 14px;
+}
+
+/* 站点区域标签更柔和 */
+.site-badge {
+  background: var(--brand-light) !important;
+  color: var(--brand-dark) !important;
+  font-size: 13px;
+  text-align: center;
+  padding: 6px 0 !important;
+  border-bottom: 1px solid var(--brand-soft) !important;
+  letter-spacing: 1px;
+}
+
+/* 通用按钮主色对齐品牌（仅原生 button，不影响 EP） */
+button:not(.el-button) {
+  background: var(--brand);
+  color: #fff;
+}
+button:not(.el-button):hover { filter: brightness(1.06); }
+
+/* 表单原生控件聚焦色对齐新主色 */
+input:not(.el-input__inner):focus,
+select:not(.el-input__inner):focus,
+textarea:not(.el-textarea__inner):focus {
+  border-color: var(--brand);
+  box-shadow: 0 0 0 3px rgba(30, 91, 184, 0.14);
+}
+
+/* Element Plus 表格表头浅蓝化，整体更正式 */
+.el-table th.el-table__cell {
+  background: var(--brand-light) !important;
+  color: var(--text-main) !important;
+  font-weight: 600;
+}
+
+/* 卡片标题工具类（管理端/用户端通用） */
+.section-title {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--text-main);
+  margin: 0 0 14px;
+  padding-bottom: 10px;
+  border-bottom: 2px solid var(--brand-light);
 }

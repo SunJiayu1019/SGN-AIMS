@@ -86,7 +86,7 @@ ul { list-style: none; padding: 0; }
   cursor: pointer;
 }
 .item:hover {
-  color: #165DFF;
+  color: var(--brand);
   padding-left: 6px;
 }
 </style>

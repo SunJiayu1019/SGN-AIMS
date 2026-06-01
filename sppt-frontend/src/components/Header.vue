@@ -18,6 +18,7 @@
             <el-icon><UserFilled /></el-icon>
             你好，{{ user.realName || user.phone }}
           </span>
+          <el-button size="small" :icon="Setting" @click="goProfile">设置</el-button>
           <el-button size="small" type="danger" plain :icon="SwitchButton" @click="logout">退出登录</el-button>
         </template>
         <template v-else>
@@ -58,7 +59,7 @@ import { useRoute, useRouter } from 'vue-router'
 import { getUser, clearUser } from '@/utils/auth'
 import AreaCascader from '@/components/AreaCascader.vue'
 import {
-  Clock, MapLocation, UserFilled, SwitchButton, User, Plus, ArrowDown
+  Clock, MapLocation, UserFilled, SwitchButton, User, Plus, ArrowDown, Setting
 } from '@element-plus/icons-vue'
 
 const route = useRoute()
@@ -89,6 +90,7 @@ function changeCity(val) {
 }
 function goLogin() { router.push('/login') }
 function goRegister() { router.push('/register') }
+function goProfile() { router.push('/user/profile') }
 function logout() {
   clearUser()
   user.value = null
@@ -118,42 +120,51 @@ onMounted(() => {
 .city { gap: 6px; display: flex; align-items: center; }
 .welcome { color: var(--text-main); display: flex; align-items: center; gap: 4px; }
 
-/* 蓝色条幅（升级为渐变） */
+/* 蓝色条幅（端庄正式的深蓝渐变） */
 .banner {
-  height: 150px;
-  background: linear-gradient(120deg, #1e3a8a 0%, #2563eb 60%, #3b82f6 100%);
+  height: 140px;
+  background: linear-gradient(120deg, #0f3a73 0%, #1e5bb8 55%, #2c7be5 100%);
   color: #fff;
   display: flex;
   align-items: center;
   justify-content: center;
+  position: relative;
+}
+.banner::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle at 20% 30%, rgba(255,255,255,.10), transparent 60%);
+  pointer-events: none;
 }
 .banner h2 {
-  font-size: 30px;
+  font-size: 28px;
   letter-spacing: 4px;
   font-weight: 700;
-  text-shadow: 0 2px 8px rgba(0,0,0,.2);
+  text-shadow: 0 2px 10px rgba(0,0,0,.18);
 }
 
-/* 导航 */
+/* 导航（改为与主色一致的蓝，端庄正式） */
 .nav {
-  background: linear-gradient(90deg, #b91c1c, #dc2626);
+  background: linear-gradient(90deg, #0f3a73, #1e5bb8);
   padding: 0;
   text-align: center;
   display: flex;
   justify-content: center;
+  box-shadow: 0 2px 8px rgba(15, 58, 115, .18);
 }
 .nav a, .nav-item {
-  color: #fff;
+  color: #eaf2ff;
   text-decoration: none;
-  padding: 14px 22px;
+  padding: 14px 24px;
   display: inline-flex;
   align-items: center;
   gap: 4px;
   font-size: 15px;
-  transition: background .2s;
+  transition: background .2s, color .2s;
 }
-.nav a:hover, .nav-item:hover { background: rgba(0,0,0,.18); cursor: pointer; }
-.nav a.router-link-active { background: #fff; color: #dc2626; font-weight: 700; }
+.nav a:hover, .nav-item:hover { background: rgba(255,255,255,.12); color: #fff; cursor: pointer; }
+.nav a.router-link-active { background: #fff; color: #1e5bb8; font-weight: 700; }
 .caret { font-size: 12px; }
 
 .nav-dropdown { position: relative; display: inline-block; }
@@ -162,7 +173,7 @@ onMounted(() => {
   position: absolute;
   background: #fff;
   min-width: 160px;
-  box-shadow: 0 6px 18px rgba(0,0,0,.12);
+  box-shadow: 0 6px 18px rgba(15, 58, 115, .14);
   border-radius: 0 0 8px 8px;
   z-index: 99;
   overflow: hidden;

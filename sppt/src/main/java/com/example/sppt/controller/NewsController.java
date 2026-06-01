@@ -81,16 +81,24 @@ public class NewsController {
         return Result.success(newsService.getById(id));
     }
 
-    // 9. 新增（自动补 createTime）
+    // 9. 新增（自动补 createTime；禁用词校验失败返回 fail）
     @PostMapping
     public Result<Boolean> save(@RequestBody News news) {
-        return Result.success(newsService.saveNews(news));
+        try {
+            return Result.success(newsService.saveNews(news));
+        } catch (Exception e) {
+            return Result.fail(e.getMessage());
+        }
     }
 
-    // 10. 修改
+    // 10. 修改（同样做禁用词校验）
     @PutMapping
     public Result<Boolean> update(@RequestBody News news) {
-        return Result.success(newsService.updateById(news));
+        try {
+            return Result.success(newsService.updateNews(news));
+        } catch (Exception e) {
+            return Result.fail(e.getMessage());
+        }
     }
 
     // 11. 删除

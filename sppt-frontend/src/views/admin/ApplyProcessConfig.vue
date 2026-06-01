@@ -242,7 +242,7 @@ onMounted(() => {
 .type-tag {
   font-size: 12px;
   font-weight: 500;
-  color: #165DFF;
+  color: var(--brand);
   background: #e8f0ff;
   border-radius: 4px;
   padding: 2px 8px;
@@ -271,7 +271,7 @@ onMounted(() => {
   color: #4e5969;
   transition: all .15s;
 }
-.step-btn:hover:not(:disabled) { border-color: #165DFF; color: #165DFF; }
+.step-btn:hover:not(:disabled) { border-color: var(--brand); color: var(--brand); }
 .step-btn:disabled { opacity: .4; cursor: not-allowed; }
 .level-control input {
   width: 48px;
@@ -305,7 +305,7 @@ onMounted(() => {
   font-size: 13px;
   font-weight: 600;
   color: #fff;
-  background: linear-gradient(135deg, #165DFF, #4080ff);
+  background: linear-gradient(135deg, var(--brand), #4080ff);
   border-radius: 6px;
   padding: 4px 12px;
 }
@@ -338,9 +338,9 @@ onMounted(() => {
   background: #f7faff;
 }
 .admin-chip.checked {
-  border-color: #165DFF;
+  border-color: var(--brand);
   background: #eef4ff;
-  box-shadow: 0 0 0 1px #165DFF inset;
+  box-shadow: 0 0 0 1px var(--brand) inset;
 }
 /* 隐藏原生 checkbox，用整张卡片做点击区 */
 .admin-chip input {
@@ -355,7 +355,7 @@ onMounted(() => {
   flex-shrink: 0;
   border-radius: 50%;
   background: #e8f0ff;
-  color: #165DFF;
+  color: var(--brand);
   font-weight: 600;
   font-size: 15px;
   display: flex;
@@ -363,7 +363,7 @@ onMounted(() => {
   justify-content: center;
 }
 .admin-chip.checked .avatar {
-  background: #165DFF;
+  background: var(--brand);
   color: #fff;
 }
 .chip-info {
@@ -391,7 +391,7 @@ onMounted(() => {
   margin-left: auto;
   font-size: 13px;
   font-weight: 700;
-  color: #165DFF;
+  color: var(--brand);
   opacity: 0;
   transform: scale(.6);
   transition: all .15s;
@@ -419,6 +419,6 @@ onMounted(() => {
   transition: opacity .15s;
 }
 .btn:hover { opacity: .9; }
-.save { background: #165DFF; color: #fff; }
+.save { background: var(--brand); color: #fff; }
 .reload { background: #f2f3f5; color: #4e5969; }
 </style>

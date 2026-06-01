@@ -150,7 +150,7 @@ onMounted(loadBase)
   background: #fff; border: 1px solid #eee; border-radius: 8px; padding: 14px;
 }
 .card-title { font-weight: bold; margin-bottom: 12px; font-size: 14px; }
-.card-title .cur { color: #165DFF; font-weight: normal; margin-left: 6px; }
+.card-title .cur { color: var(--brand); font-weight: normal; margin-left: 6px; }
 
 .roles { width: 200px; flex-shrink: 0; }
 .role-item {
@@ -158,7 +158,7 @@ onMounted(loadBase)
   margin-bottom: 8px; cursor: pointer;
 }
 .role-item:hover { background: #f7faff; }
-.role-item.active { border-color: #165DFF; background: #eef4ff; }
+.role-item.active { border-color: var(--brand); background: #eef4ff; }
 .role-name { font-weight: 500; }
 .role-code { color: #999; font-size: 12px; }
 
@@ -183,6 +183,6 @@ onMounted(loadBase)
   margin-top: 14px; display: flex; align-items: center; gap: 14px;
 }
 .selected-count { color: #888; font-size: 13px; }
-.btn.save { background: #165DFF; color: #fff; border: none; border-radius: 4px; padding: 8px 18px; cursor: pointer; }
+.btn.save { background: var(--brand); color: #fff; border: none; border-radius: 4px; padding: 8px 18px; cursor: pointer; }
 .empty { color: #aaa; padding: 14px; text-align: center; }
 </style>

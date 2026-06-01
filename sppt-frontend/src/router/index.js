@@ -18,6 +18,7 @@ import Reissue from '@/views/user/Reissue.vue'
 import Check from '@/views/user/Check.vue'
 import About from '@/views/user/About.vue'
 import ApplySubmit from '@/views/user/ApplySubmit.vue'
+import Profile from '@/views/user/Profile.vue'
 
 // ======================================
 // 管理端（后台）—— 带侧边栏的布局 + 各功能页
@@ -32,6 +33,10 @@ import ApplyProcessConfig from '@/views/admin/ApplyProcessConfig.vue'
 import RolePermission from '@/views/admin/RolePermission.vue'
 import WebsiteManage from '@/views/admin/WebsiteManage.vue'
 import SystemLog from '@/views/admin/SystemLog.vue'
+import HelpInfo from '@/views/admin/HelpInfo.vue'
+import GisMap from '@/views/admin/GisMap.vue'
+import UserManage from '@/views/admin/UserManage.vue'
+import Settings from '@/views/admin/Settings.vue'
 
 const routes = [
   // ============ 登录 / 注册 ============
@@ -40,15 +45,16 @@ const routes = [
 
   // ============ 用户端 /user/xxx ============
   // 需求：除「审批网站主页」外，其余页面一律需要登录后才能访问。
-  { path: '/',             component: Home },                                  // 审批网站主页（唯一免登录）
-  { path: '/user/home',    component: Home },                                  // 主页别名（同样免登录）
-  { path: '/user/policy',  component: Policy,    meta: { needLogin: true } },  // 管理政策
-  { path: '/user/notice',  component: Notice,    meta: { needLogin: true } },  // 通知公告
+  { path: '/',             component: Home },                                  // 审批网站主页（免登录）
+  { path: '/user/home',    component: Home },                                  // 主页别名（免登录）
+  { path: '/user/policy',  component: Policy },                                // 管理政策（访客可看）
+  { path: '/user/notice',  component: Notice },                                // 通知公告（访客可看）
+  { path: '/user/about',   component: About },                                 // 关于我们（访客可看）
   { path: '/user/apply',   component: Apply,     meta: { needLogin: true } },  // 我的申请
   { path: '/user/reissue', component: Reissue,   meta: { needLogin: true } },  // 补发
   { path: '/user/check',   component: Check,     meta: { needLogin: true } },  // 门牌排查
-  { path: '/user/about',   component: About,     meta: { needLogin: true } },  // 关于我们
   { path: '/user/submit',  component: ApplySubmit, meta: { needLogin: true } },// 提交申请
+  { path: '/user/profile', component: Profile,    meta: { needLogin: true } },// 个人中心
 
   // ============ 管理端 /admin/xxx（带侧边栏的后台首页）============
   {
@@ -62,10 +68,14 @@ const routes = [
       { path: 'house',      component: HouseManage,        meta: { title: '门牌管理' } },
       { path: 'area',       component: AreaManage,         meta: { title: '行政区划管理' } },
       { path: 'street',     component: StreetQuery,        meta: { title: '街道查询' } },
+      { path: 'gis',        component: GisMap,             meta: { title: '门牌专题地图' } },
       { path: 'process',    component: ApplyProcessConfig, meta: { title: '审批流程配置' } },
       { path: 'role',       component: RolePermission,     meta: { title: '角色权限管理' } },
       { path: 'website',    component: WebsiteManage,      meta: { title: '审批网站管理' } },
+      { path: 'user',       component: UserManage,         meta: { title: '用户管理' } },
       { path: 'log',        component: SystemLog,          meta: { title: '系统日志' } },
+      { path: 'settings',   component: Settings,           meta: { title: '设置' } },
+      { path: 'help',       component: HelpInfo,           meta: { title: '帮助信息' } },
     ],
   },
 ]
