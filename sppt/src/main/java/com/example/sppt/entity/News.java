@@ -18,6 +18,10 @@ public class News {
 
     private String content;
 
+    // 封面/配图：存图片的访问相对路径（如 /uploads/news/xxx.png），图片文件落磁盘
+    @TableField("cover_image")
+    private String coverImage;
+
     private String type;  // policy（政策）/ notice（公告）
 
     @TableField("area_id")

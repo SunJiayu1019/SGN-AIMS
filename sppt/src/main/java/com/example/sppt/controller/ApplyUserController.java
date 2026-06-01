@@ -25,6 +25,9 @@ public class ApplyUserController {
     // 提交申请
     @PostMapping("/submit")
     public Result<String> submit(@RequestBody ApplyForm form) {
+      try {
+        // 联系电话格式校验：11 位数字（服务端兜底）
+        com.example.sppt.util.ValidatorUtil.requireValidPhone(form.getContactPhone());
         // apply_no 唯一非空：若前端未带，则服务端生成 AP + 时间戳
         if (form.getApplyNo() == null || form.getApplyNo().trim().isEmpty()) {
             form.setApplyNo("AP" + System.currentTimeMillis());
@@ -38,6 +41,9 @@ public class ApplyUserController {
         form.setStatus("PENDING");
         applyFormService.save(form);
         return Result.success("提交成功");
+      } catch (Exception e) {
+        return Result.fail(e.getMessage());
+      }
     }
 
     // 我的申请（按 用户 + 申请类型）

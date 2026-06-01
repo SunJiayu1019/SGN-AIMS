@@ -47,7 +47,8 @@
           <tbody>
           <tr v-for="item in showList" :key="item.id">
             <td>{{ item.houseCode }}</td>
-            <td>{{ item.address }}</td>
+            <!-- 修改这里：调用无箭头的拼接方法 -->
+            <td>{{ getFullAddressNoArrow(item) }}</td>
             <td>{{ typeName(item.houseType) }}</td>
             <td>{{ areaName(item.areaId) }}</td>
             <td>
@@ -68,38 +69,66 @@
 import { ref, onMounted, computed } from 'vue'
 import axios from 'axios'
 import Header from '@/components/Header.vue'
+import AreaCascader from '@/components/AreaCascader.vue'
 
 const API = 'http://localhost:8080'
 
-// 注意：必须是 ref，模板与过滤里才能用 .value（旧代码用了普通常量导致过滤报错，列表空白）
-const areaId = ref('')        // 级联框选中的区域id（空=全部）
+const areaId = ref('')
 const list = ref([])
 const searchKey = ref('')
 const houseType = ref('')
 const status = ref('')
-const areaMap = ref({})       // id -> name，用于展示街道名
+const areaMap = ref({})
+const areaTree = ref({})
 
 const unwrap = (res) => (res.data?.data !== undefined ? res.data.data : res.data)
 
-// 加载行政区划，构建 id->name 映射
+// 加载行政区划，构建映射 + 树形结构
 const loadAreaMap = async () => {
   try {
     const res = await axios.get(API + '/api/sys/area/list')
     const all = unwrap(res) || []
     const map = {}
-    all.forEach(a => { map[a.id] = a.name })
+    const tree = {}
+    all.forEach(a => {
+      map[a.id] = a
+      tree[a.id] = a
+    })
     areaMap.value = map
-  } catch (e) { /* 忽略 */ }
+    areaTree.value = tree
+  } catch (e) {
+    console.error('加载行政区划失败：', e)
+  }
 }
 
-// 拉取门牌：选了街道(level=4)就按街道查，否则取全部再前端过滤
+// 【核心修改】去掉箭头，纯文本拼接省市区县街道 + 详细地址
+const getFullAddressNoArrow = (item) => {
+  if (!item || !item.areaId) return item.address || '-'
+
+  let addrParts = []
+  let current = areaTree.value[item.areaId]
+
+  // 自底向上回溯，收集省市区县街道名称
+  while (current) {
+    addrParts.unshift(current.name)
+    current = areaTree.value[current.parentId]
+  }
+
+  // 拼接成纯文本，例如：山西省太原市杏花岭区大东关街道
+  const baseAddr = addrParts.join('')
+  const detailAddr = item.address || ''
+
+  // 如果有详细地址，直接接在后面
+  return detailAddr ? `${baseAddr}${detailAddr}` : baseAddr
+}
+
 const loadList = async () => {
   try {
     let res
     if (areaId.value) {
       res = await axios.get(API + '/user/house/list', { params: { areaId: areaId.value } })
     } else {
-      res = await axios.get(API + '/house/list')   // 全部门牌
+      res = await axios.get(API + '/house/list')
     }
     list.value = unwrap(res) || []
   } catch (e) {
@@ -121,7 +150,7 @@ const showList = computed(() => {
 })
 
 const typeName = (t) => ({ house: '住宅', shop: '商铺', factory: '厂房' }[t] || t || '-')
-const areaName = (id) => areaMap.value[id] || id || '-'
+const areaName = (id) => areaMap.value[id]?.name || id || '-'
 
 onMounted(async () => {
   await loadAreaMap()

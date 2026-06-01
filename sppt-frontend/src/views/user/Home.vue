@@ -51,7 +51,7 @@ async function loadData() {
 }
 
 const goDetail = (id) => {
-  router.push(`/news/detail/${id}`)
+  router.push(`/user/news/detail/${id}`)
 }
 
 onMounted(() => {

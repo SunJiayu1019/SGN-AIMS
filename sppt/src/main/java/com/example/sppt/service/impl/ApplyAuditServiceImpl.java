@@ -374,10 +374,18 @@ public class ApplyAuditServiceImpl implements ApplyAuditService {
         house.setHouseType(form.getHouseType());
         house.setAreaId(streetAreaId);
 
-        // ========== 新增：自动从街道坐标赋值 ==========
-        house.setLng(streetArea.getLng());
-        house.setLat(streetArea.getLat());
-        house.setGeometry(streetArea.getGeometry());  // 如果有 geometry 字段
+        // ========== 自动从街道坐标赋值 ==========
+        // geometry 统一存 WKT 文本 "POINT(lng lat)"。
+        // 过去直接 house.setGeometry(streetArea.getGeometry())：
+        // 当 sys_area.geometry 是 MySQL 的 POINT(二进制) 类型时，
+        // MyBatis 把 WKB 字节读进 String，再写进 house_info.geometry，
+        // 于是库里就是乱码。现在改为：用 lng/lat 现拼标准 WKT 文本，
+        // 既不依赖列的二进制内容，也保证 house_info.geometry 永远是可读文本。
+        String lng = streetArea.getLng();
+        String lat = streetArea.getLat();
+        house.setLng(lng);
+        house.setLat(lat);
+        house.setGeometry(buildWkt(lng, lat));
         // =============================================
 
         house.setCreateTime(LocalDateTime.now());
@@ -387,5 +395,16 @@ public class ApplyAuditServiceImpl implements ApplyAuditService {
         // 回写三位门牌号到 apply_form.house_id
         form.setHouseId(number);
         applyFormService.updateById(form);
+    }
+
+    /**
+     * 用经纬度拼出标准 WKT 文本 "POINT(lng lat)"。
+     * 任一为空则返回 null（前端/GIS 解析时会跳过无坐标点位）。
+     */
+    private String buildWkt(String lng, String lat) {
+        if (lng == null || lng.trim().isEmpty() || lat == null || lat.trim().isEmpty()) {
+            return null;
+        }
+        return "POINT(" + lng.trim() + " " + lat.trim() + ")";
     }
 }

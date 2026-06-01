@@ -75,6 +75,19 @@
         <textarea v-model="form.content" rows="6" placeholder="请输入正文内容"></textarea>
       </div>
 
+      <div class="form-row top">
+        <label>配图</label>
+        <div class="upload-wrap">
+          <input type="file" accept="image/*" @change="onPickImage" />
+          <span v-if="uploading" class="up-tip">上传中…</span>
+          <div v-if="form.coverImage" class="preview">
+            <img :src="fullImg(form.coverImage)" alt="配图预览" />
+            <button class="btn-del small" @click="form.coverImage = ''">移除</button>
+          </div>
+          <span v-else class="up-tip">支持 jpg/png/gif/webp，≤5MB</span>
+        </div>
+      </div>
+
       <div class="form-row">
         <label>发布时间</label>
         <input value="（新增时自动生成，无需填写）" disabled />
@@ -92,6 +105,7 @@
       <tr>
         <th>ID</th>
         <th>标题</th>
+        <th>配图</th>
         <th>所属子站</th>
         <th>发布机构</th>
         <th>发布人ID</th>
@@ -103,6 +117,10 @@
       <tr v-for="n in list" :key="n.id">
         <td>{{ n.id }}</td>
         <td>{{ n.title }}</td>
+        <td>
+          <img v-if="n.coverImage" :src="fullImg(n.coverImage)" class="thumb" alt="配图" />
+          <span v-else class="no-img">—</span>
+        </td>
         <td>{{ areaName(n.areaId) }}</td>
         <td>{{ n.publishInstitution || '-' }}</td>
         <td>{{ n.publishId == null ? '-' : n.publishId }}</td>
@@ -113,7 +131,7 @@
         </td>
       </tr>
       <tr v-if="list.length === 0">
-        <td colspan="7" class="empty">
+        <td colspan="8" class="empty">
           暂无{{ activeType === 'policy' ? '政策' : '公告' }}数据
         </td>
       </tr>
@@ -143,8 +161,11 @@ const showForm = ref(false)
 //   id 仅编辑时携带；createTime 新增时由后端自动生成）
 // areaId 用 '' 表示「总站/全省」，与级联组件的“全部”哨兵值保持一致；
 // 提交后端时再把 '' 转成 0（数据库约定 area_id=0 即总站）。
-const emptyForm = () => ({ id: null, title: '', content: '', areaId: '', publishInstitution: '' })
+const emptyForm = () => ({ id: null, title: '', content: '', areaId: '', publishInstitution: '', coverImage: '' })
 const form = ref(emptyForm())
+
+// 图片上传状态
+const uploading = ref(false)
 
 // 禁用词管理
 const bannedWords = ref([])
@@ -199,6 +220,48 @@ function resetForm() {
   showForm.value = false
 }
 
+// 把后端返回的相对路径拼成可访问的完整地址（如 /uploads/news/x.png -> http://localhost:8080/uploads/news/x.png）
+function fullImg(path) {
+  if (!path) return ''
+  if (/^https?:\/\//i.test(path)) return path  // 已是完整地址
+  return API + path
+}
+
+// 选择图片后立即上传，成功后把返回的访问路径存进 form.coverImage
+async function onPickImage(e) {
+  const file = e.target.files && e.target.files[0]
+  if (!file) return
+  if (!file.type.startsWith('image/')) {
+    alert('请选择图片文件')
+    e.target.value = ''
+    return
+  }
+  if (file.size > 5 * 1024 * 1024) {
+    alert('图片不能超过 5MB')
+    e.target.value = ''
+    return
+  }
+  const fd = new FormData()
+  fd.append('file', file)
+  fd.append('module', 'news')
+  uploading.value = true
+  try {
+    const res = await axios.post(API + '/api/upload/image', fd, {
+      headers: { 'Content-Type': 'multipart/form-data' }
+    })
+    if (res.data && res.data.code === 200) {
+      form.value.coverImage = res.data.data  // 相对路径
+    } else {
+      alert((res.data && res.data.msg) || '上传失败')
+    }
+  } catch (err) {
+    alert('上传失败：' + err.message)
+  } finally {
+    uploading.value = false
+    e.target.value = ''  // 允许重复选择同一文件
+  }
+}
+
 // 编辑：把行数据填入表单（createTime 不放进表单，更新时由后端保留原值）
 function editRow(row) {
   form.value = {
@@ -207,7 +270,8 @@ function editRow(row) {
     content: row.content,
     // 数据库里 0 / null 都视为总站 -> 用 '' 让级联组件回显为“全部（不限）”
     areaId: (row.areaId == null || row.areaId === 0) ? '' : row.areaId,
-    publishInstitution: row.publishInstitution || ''
+    publishInstitution: row.publishInstitution || '',
+    coverImage: row.coverImage || ''
   }
   showForm.value = true
 }
@@ -228,7 +292,8 @@ async function submitForm() {
     type: activeType.value,
     areaId: form.value.areaId === '' ? 0 : Number(form.value.areaId),
     publishInstitution: form.value.publishInstitution || '',
-    publishId: getUserId() == null ? null : Number(getUserId())
+    publishId: getUserId() == null ? null : Number(getUserId()),
+    coverImage: form.value.coverImage || ''
   }
 
   try {
@@ -325,9 +390,14 @@ onMounted(() => {
   padding: 8px 18px;
   border: 1px solid #ccc;
   background: #fff;
+  color: #333;            /* 修复：未选中标签要有深色文字，否则白底白字看不见 */
   border-radius: 6px;
   cursor: pointer;
   font-size: 14px;
+}
+.tab:hover {
+  border-color: var(--brand);
+  color: var(--brand);
 }
 .tab.active {
   background: var(--brand);
@@ -398,6 +468,21 @@ onMounted(() => {
 }
 .btn.plain { background: #6c757d; }
 .btn.add { background: #2ba471; }
+
+/* 配图上传 */
+.upload-wrap { flex: 1; display: flex; flex-direction: column; gap: 8px; }
+.up-tip { color: #999; font-size: 12px; }
+.preview { display: flex; align-items: center; gap: 10px; }
+.preview img {
+  max-width: 180px; max-height: 120px; border: 1px solid #eee;
+  border-radius: 6px; object-fit: cover;
+}
+.btn-del.small { padding: 3px 10px; font-size: 12px; }
+.thumb {
+  width: 56px; height: 40px; object-fit: cover;
+  border: 1px solid #eee; border-radius: 4px; cursor: zoom-in;
+}
+.no-img { color: #ccc; }
 .tb {
   width: 100%;
   border-collapse: collapse;
