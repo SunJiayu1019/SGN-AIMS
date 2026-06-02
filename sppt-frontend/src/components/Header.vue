@@ -18,6 +18,7 @@
             <el-icon><UserFilled /></el-icon>
             你好，{{ user.realName || user.phone }}
           </span>
+          <el-button size="small" type="primary" plain :icon="Setting" @click="goProfile">个人设置</el-button>
           <el-button size="small" type="danger" plain :icon="SwitchButton" @click="logout">退出登录</el-button>
         </template>
         <template v-else>

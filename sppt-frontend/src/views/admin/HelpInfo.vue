@@ -1,13 +1,5 @@
 <template>
   <div class="help">
-    <div class="app-card intro">
-      <el-icon class="intro-icon"><QuestionFilled /></el-icon>
-      <div>
-        <div class="intro-title">帮助信息</div>
-        <div class="intro-sub">以下内容来自数据库 sys_help 表，按排序号展示系统使用说明。</div>
-      </div>
-    </div>
-
     <div class="app-card" v-loading="loading">
       <el-empty v-if="!loading && list.length === 0" description="暂无帮助信息" :image-size="90" />
       <el-collapse v-else v-model="active" accordion>

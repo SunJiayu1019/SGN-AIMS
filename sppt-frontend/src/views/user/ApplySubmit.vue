@@ -23,7 +23,7 @@
           <input v-model="form.contactPhone" type="text" placeholder="请输入电话" />
         </div>
 
-        <!-- 新申请：房屋类型 + 所属街道 + 详细地址 -->
+        <!-- 新申请：房屋类型 + 所属街道 + 详细地址（同行） -->
         <template v-if="form.applyType === 'new'">
           <div class="form-item">
             <label>房屋类型</label>
@@ -34,15 +34,19 @@
             </select>
           </div>
 
+          <!-- 所属街道 + 详细地址 同一行（修复版：限制输入框宽度） -->
           <div class="form-item">
-            <label>所属街道（省/市/区县/街道，需选到街道）</label>
-            <AreaCascader v-model="form.areaId" :include-all="false" />
-            <p class="hint">门牌编号将分配在所选街道下，请务必选择到「街道」一级。</p>
-          </div>
-
-          <div class="form-item">
-            <label>房屋详细地址</label>
-            <input v-model="form.detailAddress" type="text" placeholder="请输入详细地址" />
+            <label>所属街道及详细地址（需选到街道一级）</label>
+            <div class="address-row">
+              <div class="address-row__cascader">
+                <AreaCascader v-model="form.areaId" :include-all="false" />
+              </div>
+              <div class="address-row__divider">-</div>
+              <div class="address-row__input">
+                <input v-model="form.detailAddress" type="text" placeholder="请输入具体小区、单元、门牌号" />
+              </div>
+            </div>
+            <p class="hint">门牌编号将分配在所选街道下，请务必选择到「街道」一级。</p >
           </div>
         </template>
 
@@ -51,7 +55,7 @@
           <div class="form-item">
             <label>原门牌编号</label>
             <input v-model="form.originalHouseCode" type="text" placeholder="请填写原门牌编号，如 10086-001" />
-            <p class="hint">补发将复用原门牌编号，请填写门牌排查中查到的原编号。</p>
+            <p class="hint">补发将复用原门牌编号，请填写门牌排查中查到的原编号。</p >
           </div>
           <div class="form-item">
             <label>门牌丢失/损坏情况</label>
@@ -78,6 +82,7 @@ import axios from 'axios'
 import Header from '@/components/Header.vue'
 import AreaCascader from '@/components/AreaCascader.vue'
 import { getUserId, getAreaId } from '@/utils/auth'
+import { isValidPhone, phoneError } from '@/utils/validators'
 
 const userId = getUserId()
 
@@ -98,6 +103,7 @@ const damageInfo = ref('')
 
 const submitApply = async () => {
   // 基本校验
+  if (!isValidPhone(form.value.contactPhone)) { alert(phoneError); return }
   if (form.value.applyType === 'new') {
     if (!form.value.areaId) { alert('请选择所属街道（需选到街道一级）'); return }
   } else {
@@ -138,4 +144,27 @@ input, select, textarea { width: 100%; }
   border: none; border-radius: var(--radius-sm); font-size: 15px; font-weight: 600;
 }
 .submit-btn:hover { background: var(--brand-dark); }
+
+/* 所属街道 + 详细地址 同行布局（修复版） */
+.address-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+}
+.address-row__cascader {
+  flex-shrink: 0; /* 级联选择框绝不被压缩 */
+}
+.address-row__divider {
+  color: var(--text-weak);
+  user-select: none;
+}
+.address-row__input {
+  flex: 1;
+  min-width: 0; /* 关键：解决 flex 子元素超出问题 */
+  max-width: 320px; /* 限制输入框最大宽度，避免把级联框挤没 */
+}
+.address-row__input input {
+  width: 100%;
+}
 </style>

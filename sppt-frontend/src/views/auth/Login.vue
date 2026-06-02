@@ -37,6 +37,7 @@ import { useRouter, useRoute } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { Iphone, Lock, Location } from '@element-plus/icons-vue'
 import { setUser } from '@/utils/auth'
+import { isValidPhone, phoneError } from '@/utils/validators'
 
 const router = useRouter()
 const route = useRoute()
@@ -49,6 +50,10 @@ function unwrap(res) { return res.data?.data !== undefined ? res.data.data : res
 async function doLogin() {
   if (!phone.value || !password.value) {
     ElMessage.warning('请输入手机号和密码')
+    return
+  }
+  if (!isValidPhone(phone.value)) {
+    ElMessage.warning(phoneError)
     return
   }
   loading.value = true

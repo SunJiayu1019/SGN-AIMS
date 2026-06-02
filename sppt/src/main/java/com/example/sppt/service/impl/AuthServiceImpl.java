@@ -44,6 +44,9 @@ public class AuthServiceImpl implements AuthService {
         if (dto.getPassword() == null || dto.getPassword().isEmpty()) {
             throw new IllegalArgumentException("密码不能为空");
         }
+        // 1.1 格式校验（服务端兜底，防止绕过前端）
+        com.example.sppt.util.ValidatorUtil.requireValidPhone(dto.getPhone());
+        com.example.sppt.util.ValidatorUtil.requireValidPassword(dto.getPassword());
 
         // 2. 手机号唯一性校验（库表未建唯一约束，这里在业务层兜底）
         long exists = sysUserService.count(new LambdaQueryWrapper<SysUser>()

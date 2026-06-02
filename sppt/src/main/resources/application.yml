@@ -4,9 +4,20 @@ spring:
     url: jdbc:mysql://localhost:3306/sppt?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai
     username: root
     password: 1019 # 这里改成你自己的MySQL密码
+  # 文件上传大小限制
+  servlet:
+    multipart:
+      max-file-size: 5MB
+      max-request-size: 10MB
 
 mybatis-plus:
   mapper-locations: classpath:mapper/*.xml
   type-aliases-package: com.example.sppt.entity
   configuration:
-    map-underscore-to-camel-case: true   # 关键：下划线自动转驼峰
+    map-underscore-to-camel-case: true # 关键：下划线自动转驼峰
+
+# 上传文件保存目录。
+# 用绝对路径最稳妥：保证「保存」和「访问映射」永远指向同一目录，
+# 不受 IDE 启动工作目录（项目根 / sppt 子模块）影响。
+file:
+  upload-dir: D:/project/uploads
