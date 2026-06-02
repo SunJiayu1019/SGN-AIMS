@@ -16,7 +16,6 @@
         <div class="cover-image" v-if="detail.coverImage">
           <img :src="fullImg(detail.coverImage)" alt="新闻封面" />
         </div>
-
         <div class="content-text">
           {{ detail.content }}
         </div>
@@ -38,6 +37,7 @@ const route = useRoute()
 const detail = ref(null)
 const id = route.params.id
 
+<<<<<<< HEAD
 const API = 'http://localhost:8080'
 // cover_image 是相对路径(/uploads/news/xxx.png)，拼上后端地址；已是完整 URL 则原样返回
 const fullImg = (path) => {
@@ -45,6 +45,8 @@ const fullImg = (path) => {
   return /^https?:\/\//i.test(path) ? path : API + path
 }
 
+=======
+>>>>>>> f4fc9134f085d3d9da20473961c0e3b956851d03
 // 统一解包后端 Result 格式
 const unwrap = (res) => res.data?.data || res.data
 
@@ -101,6 +103,7 @@ onMounted(() => {
   white-space: pre-line;
   text-align: justify;
 }
+<<<<<<< HEAD
 .cover-image {
   text-align: center;
   margin: 0 auto 24px;
@@ -112,6 +115,8 @@ onMounted(() => {
   border: 1px solid #eee;
   object-fit: contain;
 }
+=======
+>>>>>>> f4fc9134f085d3d9da20473961c0e3b956851d03
 .loading {
   text-align: center;
   padding: 50px;

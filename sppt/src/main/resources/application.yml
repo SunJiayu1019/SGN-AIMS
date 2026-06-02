@@ -21,3 +21,4 @@ mybatis-plus:
 # 不受 IDE 启动工作目录（项目根 / sppt 子模块）影响。
 file:
   upload-dir: D:/project/uploads
+
