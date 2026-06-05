@@ -11,11 +11,13 @@ spring:
       max-request-size: 10MB
 
 mybatis-plus:
-  mapper-locations: classpath:mapper/*.xml
+  mapper-locations: classpath:mapper/*.xmlpukl
   type-aliases-package: com.example.sppt.entity
   configuration:
-    map-underscore-to-camel-case: true   # 关键：下划线自动转驼峰
+    map-underscore-to-camel-case: true # 关键：下划线自动转驼峰
 
-# 上传文件保存目录（相对启动目录；可改成绝对路径，如 D:/sppt-uploads）
+# 上传文件保存目录。
+# 用绝对路径最稳妥：保证「保存」和「访问映射」永远指向同一目录，
+# 不受 IDE 启动工作目录（项目根 / sppt 子模块）影响。
 file:
-  upload-dir: ./uploads
+  upload-dir: D:/project/uploads
