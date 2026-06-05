@@ -27,7 +27,7 @@
             <el-input v-model="pwd.oldPassword" type="password" show-password placeholder="请输入原密码" />
           </el-form-item>
           <el-form-item label="新密码">
-            <el-input v-model="pwd.newPassword" type="password" show-password placeholder="至少6位" />
+            <el-input v-model="pwd.newPassword" type="password" show-password placeholder="数字+字母，不含符号" />
           </el-form-item>
           <el-form-item label="确认新密码">
             <el-input v-model="pwd.confirm" type="password" show-password placeholder="再次输入新密码" />
@@ -47,6 +47,7 @@ import axios from 'axios'
 import { ElMessage } from 'element-plus'
 import AreaCascader from '@/components/AreaCascader.vue'
 import { getUserId, setUser } from '@/utils/auth'
+import { isValidPhone, isValidPassword, phoneError, passwordError } from '@/utils/validators'
 
 const API = 'http://localhost:8080'
 const tab = ref('profile')
@@ -78,7 +79,7 @@ async function loadProfile() {
 
 async function saveProfile() {
   if (!form.realName) { ElMessage.warning('请输入真实姓名'); return }
-  if (!/^1\d{10}$/.test(form.phone)) { ElMessage.warning('手机号格式不正确'); return }
+  if (!isValidPhone(form.phone)) { ElMessage.warning(phoneError); return }
   savingProfile.value = true
   try {
     const res = await axios.post(API + '/api/user/update-profile', {
@@ -95,7 +96,7 @@ async function saveProfile() {
 
 async function savePwd() {
   if (!pwd.oldPassword) { ElMessage.warning('请输入原密码'); return }
-  if (!pwd.newPassword || pwd.newPassword.length < 6) { ElMessage.warning('新密码至少6位'); return }
+  if (!isValidPassword(pwd.newPassword)) { ElMessage.warning(passwordError); return }
   if (pwd.newPassword !== pwd.confirm) { ElMessage.warning('两次新密码不一致'); return }
   savingPwd.value = true
   try {

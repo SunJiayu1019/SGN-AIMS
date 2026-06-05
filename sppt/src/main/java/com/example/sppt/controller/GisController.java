@@ -93,6 +93,127 @@ public class GisController {
     }
 
     /**
+     * 中心缓冲查询（圆形缓冲区）。
+     *
+     * 思路：给定一个中心点(lng/lat)和半径 radius(米)，
+     *      返回落在「以中心为圆心、radius 为半径的圆」内的所有门牌。
+     *      门牌坐标存的是经纬度文本，用 Haversine 公式算球面距离，
+     *      距离 <= radius 即命中。无需 GIS 扩展，纯 Java 计算。
+     *
+     * @param lng    中心点经度
+     * @param lat    中心点纬度
+     * @param radius 缓冲半径（米）
+     * @param areaId 可选：限定区域
+     */
+    @GetMapping("/buffer/center")
+    public Result<List<Map<String, Object>>> centerBuffer(
+            @RequestParam double lng,
+            @RequestParam double lat,
+            @RequestParam double radius,
+            @RequestParam(required = false) Long areaId) {
+
+        LambdaQueryWrapper<HouseInfo> wrapper = new LambdaQueryWrapper<>();
+        if (areaId != null && areaId > 0) {
+            wrapper.eq(HouseInfo::getAreaId, areaId);
+        }
+        List<HouseInfo> houses = houseService.list(wrapper);
+
+        Map<Long, String> areaName = buildAreaNameMap();
+        List<Map<String, Object>> hit = new ArrayList<>();
+        for (HouseInfo h : houses) {
+            double[] ll = resolveLngLat(h);
+            if (ll == null) continue;
+            double dist = haversine(lat, lng, ll[1], ll[0]); // 注意 haversine 入参是(纬,经)
+            if (dist <= radius) {
+                Map<String, Object> p = toPoint(h, ll, areaName);
+                p.put("distance", Math.round(dist * 100) / 100.0); // 距中心多少米
+                hit.add(p);
+            }
+        }
+        // 按距离从近到远排序，方便前端展示
+        hit.sort((a, b) -> Double.compare(
+                ((Number) a.get("distance")).doubleValue(),
+                ((Number) b.get("distance")).doubleValue()));
+        return Result.success(hit);
+    }
+
+    /**
+     * 矩形缓冲查询（矩形/包围盒缓冲区）。
+     *
+     * 思路：给定矩形对角的两个经纬度(minLng,minLat) 与 (maxLng,maxLat)，
+     *      返回落在该矩形范围内的所有门牌（minLng<=lng<=maxLng 且 minLat<=lat<=maxLat）。
+     *      为容错，内部对 min/max 做一次规范化（谁大谁当 max）。
+     */
+    @GetMapping("/buffer/rect")
+    public Result<List<Map<String, Object>>> rectBuffer(
+            @RequestParam double minLng,
+            @RequestParam double minLat,
+            @RequestParam double maxLng,
+            @RequestParam double maxLat,
+            @RequestParam(required = false) Long areaId) {
+
+        double west  = Math.min(minLng, maxLng);
+        double east  = Math.max(minLng, maxLng);
+        double south = Math.min(minLat, maxLat);
+        double north = Math.max(minLat, maxLat);
+
+        LambdaQueryWrapper<HouseInfo> wrapper = new LambdaQueryWrapper<>();
+        if (areaId != null && areaId > 0) {
+            wrapper.eq(HouseInfo::getAreaId, areaId);
+        }
+        List<HouseInfo> houses = houseService.list(wrapper);
+
+        Map<Long, String> areaName = buildAreaNameMap();
+        List<Map<String, Object>> hit = new ArrayList<>();
+        for (HouseInfo h : houses) {
+            double[] ll = resolveLngLat(h);
+            if (ll == null) continue;
+            double x = ll[0], y = ll[1];
+            if (x >= west && x <= east && y >= south && y <= north) {
+                hit.add(toPoint(h, ll, areaName));
+            }
+        }
+        return Result.success(hit);
+    }
+
+    /** 区域 id -> 名称 映射。 */
+    private Map<Long, String> buildAreaNameMap() {
+        Map<Long, String> areaName = new LinkedHashMap<>();
+        for (SysArea a : sysAreaService.list()) {
+            areaName.put(a.getId(), a.getName());
+        }
+        return areaName;
+    }
+
+    /** 把门牌 + 已解析坐标 组装成前端点位 Map。 */
+    private Map<String, Object> toPoint(HouseInfo h, double[] ll, Map<Long, String> areaName) {
+        Map<String, Object> p = new LinkedHashMap<>();
+        p.put("id", h.getId());
+        p.put("houseCode", h.getHouseCode());
+        p.put("address", h.getAddress());
+        p.put("houseType", h.getHouseType());
+        p.put("areaId", h.getAreaId());
+        p.put("areaName", areaName.getOrDefault(h.getAreaId(), "未知区域"));
+        p.put("lng", ll[0]);
+        p.put("lat", ll[1]);
+        return p;
+    }
+
+    /**
+     * Haversine 球面距离（米）。入参均为十进制度，顺序：(纬度1,经度1,纬度2,经度2)。
+     */
+    private double haversine(double lat1, double lng1, double lat2, double lng2) {
+        final double R = 6371000.0; // 地球平均半径，米
+        double dLat = Math.toRadians(lat2 - lat1);
+        double dLng = Math.toRadians(lng2 - lng1);
+        double a = Math.sin(dLat / 2) * Math.sin(dLat / 2)
+                + Math.cos(Math.toRadians(lat1)) * Math.cos(Math.toRadians(lat2))
+                * Math.sin(dLng / 2) * Math.sin(dLng / 2);
+        double c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+        return R * c;
+    }
+
+    /**
      * 解析门牌的经纬度：优先取 lng/lat 字段；否则尝试解析 geometry "POINT(lng lat)"。
      * @return [lng, lat]，无法解析返回 null
      */

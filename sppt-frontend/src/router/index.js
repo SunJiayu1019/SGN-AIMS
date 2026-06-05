@@ -55,7 +55,12 @@ const routes = [
   { path: '/user/check',   component: Check,     meta: { needLogin: true } },  // 门牌排查
   { path: '/user/submit',  component: ApplySubmit, meta: { needLogin: true } },// 提交申请
   { path: '/user/profile', component: Profile,    meta: { needLogin: true } },// 个人中心
-
+  {
+    path: '/user/news/detail/:id',
+    name: 'NewsDetail',
+    component: () => import('@/views/user/NewsDetail.vue'),
+    meta: { title: '详情' }
+  },
   // ============ 管理端 /admin/xxx（带侧边栏的后台首页）============
   {
     path: '/admin',

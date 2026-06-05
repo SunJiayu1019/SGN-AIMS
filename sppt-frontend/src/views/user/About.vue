@@ -9,11 +9,11 @@
         <h3>平台简介</h3>
         <div class="text">{{ about.introduction }}</div>
 
-        <h3 style="margin-top:20px;">联系方式</h3>
+        <h3 style="margin-top: 24px">联系方式</h3>
         <div class="text">{{ about.contactInfo }}</div>
       </div>
 
-      <div v-else>加载中...</div>
+      <div v-else class="loading">加载中...</div>
     </div>
   </div>
 </template>
@@ -25,19 +25,41 @@ import Header from '@/components/Header.vue'
 
 const about = ref(null)
 
-const getAreaCode = () => {
-  const city = localStorage.getItem('currentCity') || 'all'
-  if (city === 'all') return '140000'
-  if (city === 'taiyuan') return '140100'
-  if (city === 'lvliang') return '141100'
-  if (city === 'linfen') return '140700'
-  return '140000'
+// ==============================================
+// 核心：根据区域编码 自动匹配数据库 area_id
+// 1 = 山西省
+// 2 = 太原市
+// 3 = 吕梁市
+// 4 = 临汾市
+// ==============================================
+const getAreaId = () => {
+  const code = localStorage.getItem('currentCity') || 'all'
+
+  // 如果是全省
+  if (code === 'all' || code === '140000') return 1
+
+  // 太原市 编码以 1401 开头
+  if (code.startsWith('1401')) return 2
+
+  // 吕梁市 编码以 1411 开头
+  if (code.startsWith('1411')) return 3
+
+  // 临汾市 编码以 1410 开头
+  if (code.startsWith('1410')) return 4
+
+  // 默认山西省
+  return 1
 }
 
+// 加载对应区域的关于我们
 const loadAbout = async () => {
-  const areaId = getAreaCode()
-  const res = await axios.get('http://localhost:8080/about/area/' + areaId)
-  about.value = res.data
+  try {
+    const areaId = getAreaId()
+    const res = await axios.get(`http://localhost:8080/about/area/${areaId}`)
+    about.value = res.data
+  } catch (e) {
+    console.error('加载失败', e)
+  }
 }
 
 onMounted(() => {
@@ -55,13 +77,17 @@ onMounted(() => {
 }
 .card {
   background: #fff;
-  padding: 20px;
+  padding: 24px;
   border-radius: 8px;
   border: 1px solid #eee;
   line-height: 1.8;
 }
 .text {
   color: #333;
-  white-space: pre-line;
+  font-size: 15px;
+}
+.loading {
+  padding: 40px;
+  text-align: center;
 }
 </style>

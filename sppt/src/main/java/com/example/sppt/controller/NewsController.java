@@ -53,7 +53,7 @@ public class NewsController {
             @RequestParam(defaultValue = "10") Integer pageSize) {
         return Result.success(newsService.pageByType(type, pageNum, pageSize));
     }
-
+ 
     // 5. 审批网站管理页：按 类型 + 区域 查询（areaId 为空表示不限区域）
     //    路径为两段（/manage/list），不会与 /{id} 冲突。
     @GetMapping("/manage/list")

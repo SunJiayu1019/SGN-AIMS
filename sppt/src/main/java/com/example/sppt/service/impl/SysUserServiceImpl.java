@@ -110,9 +110,8 @@ public class SysUserServiceImpl extends ServiceImpl<SysUserMapper, SysUser> impl
         if (userId == null) {
             throw new IllegalArgumentException("用户未登录");
         }
-        if (newPassword == null || newPassword.trim().length() < 6) {
-            throw new IllegalArgumentException("新密码长度不能少于 6 位");
-        }
+        // 新密码格式：数字+字母，不含符号（服务端兜底）
+        com.example.sppt.util.ValidatorUtil.requireValidPassword(newPassword);
         SysUser user = getById(userId);
         if (user == null) {
             throw new IllegalArgumentException("用户不存在");
@@ -135,6 +134,8 @@ public class SysUserServiceImpl extends ServiceImpl<SysUserMapper, SysUser> impl
         }
         // 手机号唯一校验（排除自己）
         if (phone != null && !phone.trim().isEmpty()) {
+            // 格式校验：11 位数字（服务端兜底）
+            com.example.sppt.util.ValidatorUtil.requireValidPhone(phone);
             long exists = count(new LambdaQueryWrapper<SysUser>()
                     .eq(SysUser::getPhone, phone.trim())
                     .ne(SysUser::getId, userId));

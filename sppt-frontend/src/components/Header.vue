@@ -18,7 +18,6 @@
             <el-icon><UserFilled /></el-icon>
             你好，{{ user.realName || user.phone }}
           </span>
-          <el-button size="small" :icon="Setting" @click="goProfile">设置</el-button>
           <el-button size="small" type="danger" plain :icon="SwitchButton" @click="logout">退出登录</el-button>
         </template>
         <template v-else>
@@ -104,7 +103,12 @@ onMounted(() => {
 </script>
 
 <style scoped>
-.site-header { box-shadow: 0 2px 10px rgba(0,0,0,.05); }
+/* 占满整个屏幕宽度，自适应缩放 */
+.site-header {
+  width: 100vw;
+  margin-left: calc(-50vw + 50%);
+  box-shadow: 0 2px 10px rgba(0,0,0,.05);
+}
 
 .header-top {
   display: flex;
@@ -142,6 +146,7 @@ onMounted(() => {
   letter-spacing: 4px;
   font-weight: 700;
   text-shadow: 0 2px 10px rgba(0,0,0,.18);
+  color: #fff;  /* ← 确保标题是白色 */
 }
 
 /* 导航（改为与主色一致的蓝，端庄正式） */

@@ -32,7 +32,8 @@ async function loadData() {
 }
 
 const goDetail = (id) => {
-  router.push(`/news/detail/${id}`)
+  if (!id || id === 'null' || id === '') return
+    router.push(`/user/news/detail/${id}`)
 }
 
 onMounted(() => {

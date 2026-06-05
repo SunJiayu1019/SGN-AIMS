@@ -57,6 +57,7 @@ import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { Iphone, Lock, User, Location } from '@element-plus/icons-vue'
 import AreaCascader from '@/components/AreaCascader.vue'
+import { isValidPhone, isValidPassword, phoneError, passwordError } from '@/utils/validators'
 
 const router = useRouter()
 const confirmPassword = ref('')
@@ -77,8 +78,9 @@ function onAreaChange(val) {
 
 async function doRegister() {
   if (!form.value.phone) { ElMessage.warning('请输入手机号'); return }
-  if (!/^1\d{10}$/.test(form.value.phone)) { ElMessage.warning('手机号格式不正确'); return }
+  if (!isValidPhone(form.value.phone)) { ElMessage.warning(phoneError); return }
   if (!form.value.password) { ElMessage.warning('请输入密码'); return }
+  if (!isValidPassword(form.value.password)) { ElMessage.warning(passwordError); return }
   if (form.value.password !== confirmPassword.value) {
     ElMessage.warning('两次输入的密码不一致'); return
   }
